@@ -1,0 +1,27 @@
+.header {
+  align-items: flex-start;
+  background-color: #575656;
+  display: flex;
+  flex-direction: column;
+  height: 100px;
+  justify-content: space-between;
+  padding: 30px; }
+  .header__main {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    width: 100%;
+    height: 40px; }
+  .header__title {
+    color: #f7f7f7;
+    font-weight: 300;
+    margin: 0; }
+  .header__logo {
+    height: 50px; }
+  .header__sub-header {
+    display: flex;
+    justify-content: space-between;
+    width: 100%; }
+    .header__sub-header h1 {
+      color: #4aaad7;
+      margin: 0; }

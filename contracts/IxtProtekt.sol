@@ -1,6 +1,6 @@
 pragma solidity ^0.4.24;
 
-contract SimpleStorage {
+contract IxtProtekt {
   uint storedData;
 
   function set(uint x) public {

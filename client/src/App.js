@@ -54,9 +54,9 @@ class App extends Component {
     }
     return (
       <div className="App">
+        <Header />
         <Router>
           <Switch>
-            <Header />
             <Route path="/account" component={AccountPage} />
             <Route path="/sign-up" component={SignUpPage} />
           </Switch>

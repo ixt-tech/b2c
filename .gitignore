@@ -1,0 +1,5 @@
+# Ignore secret key file
+.secret
+
+# Contract build directory
+client/src/contracts/

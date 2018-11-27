@@ -101,22 +101,34 @@ contract IxtProtect is Ownable, LibEIP712 {
     );
   }
 
+  /// @dev Calculates Keccak-256 hash of the member.
+  /// @param member the member struct.
+  /// @return Keccak-256 EIP712 hash of the member.
+  function getMemberHash(Member memory member)
+    internal
+    view
+    returns (bytes32 memberHash)
+  {
+    memberHash = hashEIP712Message(hashMember(member));
+    return memberHash;
+  }
+
   /// @dev Calculates EIP712 hash of the member.
   /// @param member the member struct.
   /// @return EIP712 hash of the member.
-    function hashMember(Member memory member)
-        internal
-        pure
-        returns (bytes32 result)
-    {
-      keccak256(
-        abi.encodePacked(
-          EIP712_MEMBER_SCHEMA_HASH,
-          member.membership_number,
-          keccak256(member.products_covered),
-          member.invitation_code
-        )
-      );
-    }
+  function hashMember(Member memory member)
+    internal
+    pure
+    returns (bytes32 result)
+  {
+    keccak256(
+      abi.encodePacked(
+        EIP712_MEMBER_SCHEMA_HASH,
+        member.membership_number,
+        keccak256(member.products_covered),
+        member.invitation_code
+      )
+    );
+  }
 
 }

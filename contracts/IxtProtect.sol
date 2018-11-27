@@ -13,7 +13,7 @@ contract IxtProtect is Ownable, LibEIP712 {
     bytes32 invitation_code;
   }
 
-  /// @dev compiles to smallest uintX possible (ie. uint8 if under 256 entries)
+  /// @dev compiles to smallest uintX possible (ie. uint8 if < 256 entries)
   enum Products { PERSONAL_PROTECTION }
 
   /*      Variable declarations      */
@@ -28,7 +28,7 @@ contract IxtProtect is Ownable, LibEIP712 {
   bytes32 constant internal EIP712_MEMBER_SCHEMA_HASH = keccak256(
     abi.encodePacked(
       "Member(",
-      "uint256 membership_numbers,",
+      "uint256 membership_number,",
       "uint8[] products_covered,",
       "bytes32 invitation_code",
       ")"
@@ -46,7 +46,19 @@ contract IxtProtect is Ownable, LibEIP712 {
 
   /// @notice 
   /// @param signer address of signer.
-  function join(Member memory member, uint8 v, bytes32 r, bytes32 s) public {
+  function join(
+    uint256 membership_number,
+    Products[] memory products_covered,
+    bytes32 invitation_code,
+    uint8 v,
+    bytes32 r,
+    bytes32 s
+  ) public {
+    Member memory member = Member(
+      membership_number,
+      products_covered,
+      invitation_code
+    );
     bytes32 memberHash = getMemberHash(member);
 
     require(

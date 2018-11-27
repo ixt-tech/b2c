@@ -44,8 +44,7 @@ contract IxtProtect is Ownable, LibEIP712 {
 
   /*      Main Functions      */
 
-  /// @notice 
-  /// @param signer address of signer.
+  /// @notice Registers new user as a member after the KYC process
   function join(
     uint256 membership_number,
     Products[] memory products_covered,
@@ -99,13 +98,13 @@ contract IxtProtect is Ownable, LibEIP712 {
 
   /*      Util Functions      */
 
-  /// @notice Verifies that a member signature is valid.
+  /// @notice Verifies that a signature is valid.
   /// @param signer address of signer.
   /// @param hash Signed Keccak-256 hash.
   /// @param v ECDSA signature parameter v.
   /// @param r ECDSA signature parameters r.
   /// @param s ECDSA signature parameters s.
-  /// @return Validity of member signature.
+  /// @return Validity of a signature.
   function isValidSignature(
     address signer,
     bytes32 hash,
@@ -144,13 +143,13 @@ contract IxtProtect is Ownable, LibEIP712 {
   function hashMember(Member memory member)
     internal
     pure
-    returns (bytes32 result)
+    returns (bytes32)
   {
-    keccak256(
+    return keccak256(
       abi.encodePacked(
         EIP712_MEMBER_SCHEMA_HASH,
         member.membership_number,
-        keccak256(member.products_covered),
+        keccak256(abi.encodePacked(member.products_covered)),
         member.invitation_code
       )
     );

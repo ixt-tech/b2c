@@ -109,8 +109,6 @@ contract IxtProtect is Ownable, LibEIP712 {
         pure
         returns (bytes32 result)
     {
-      bytes32 schemaHash = EIP712_ORDER_SCHEMA_HASH;
-
       keccak256(
         abi.encodePacked(
           EIP712_MEMBER_SCHEMA_HASH,

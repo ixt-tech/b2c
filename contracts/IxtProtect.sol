@@ -13,6 +13,7 @@ contract IxtProtect is Ownable, LibEIP712 {
     bytes32 invitation_code;
   }
 
+  /// @dev compiles to smallest uintX possible (ie. uint8 if under 256 entries)
   enum Products { PERSONAL_PROTECTION }
 
   /*      Variable declarations      */
@@ -86,13 +87,13 @@ contract IxtProtect is Ownable, LibEIP712 {
 
   /*      Util Functions      */
 
-  /// @notice Verifies that an order signature is valid.
+  /// @notice Verifies that a member signature is valid.
   /// @param signer address of signer.
   /// @param hash Signed Keccak-256 hash.
   /// @param v ECDSA signature parameter v.
   /// @param r ECDSA signature parameters r.
   /// @param s ECDSA signature parameters s.
-  /// @return Validity of order signature.
+  /// @return Validity of member signature.
   function isValidSignature(
     address signer,
     bytes32 hash,
@@ -102,7 +103,7 @@ contract IxtProtect is Ownable, LibEIP712 {
   )
     public
     pure
-    returns (bool isValid)
+    returns (bool)
   {
     address recovered = ecrecover(
       hash,
@@ -110,8 +111,7 @@ contract IxtProtect is Ownable, LibEIP712 {
       r,
       s
     );
-    isValid = signer == recovered;
-    return isValid;
+    return (signer == recovered);
   }
 
   /// @dev Calculates Keccak-256 hash of the member.

@@ -7,35 +7,35 @@ contract IxtProtect is Ownable {
   constructor() public {
   }
 
-  function join(string proof) {
+  function join(bytes32 proof, uint) public {
 
   }
 
-  function withdraw(uint amount) {
+  function withdraw(uint256 amount) public {
 
   }
 
-  function deposit(uint amount) {
+  function deposit(uint256 amount) public {
 
   }
 
-  function getAccountBalance() public view returns (uint) {
+  function getAccountBalance() public pure returns (uint256) {
   	return 123;
   }
 
-  function getRewardBalance() public view returns (uint) {
+  function getRewardBalance() public view returns (uint256) {
   	return 123;
   }
 
-  function halt() {
+  function halt() public {
 
   }
 
-  function depositPool(uint amount) {
+  function depositPool(uint256 amount) public {
 
   }
 
-  function withdrawPool(uint amount) {
+  function withdrawPool(uint256 amount) public {
 
   }
 

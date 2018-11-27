@@ -22,7 +22,7 @@
  *
  */
 
-const path = require("path")
+const path = require("path");
 
 // const HDWallet = require("truffle-hdwallet-provider")
 // const infuraKey = "insert infura key here!"
@@ -96,4 +96,4 @@ module.exports = {
     }
   },
   contracts_build_directory: path.join(__dirname, "client/src/contracts")
-}
+};

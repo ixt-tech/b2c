@@ -13,7 +13,6 @@
 
 pragma solidity 0.5.0;
 
-
 contract LibEIP712 {
 
     // EIP191 header for EIP712 prefix

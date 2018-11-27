@@ -22,7 +22,15 @@ contract IxtProtect is Ownable, LibEIP712 {
   /// @dev the same data as `members`, but iterable
   Member[] members_arr;
   /// @dev definition of type hash of structure to provide support for EIP-712
-  string private constant MEMBER_TYPE = "Identity(uint256 membership_numbers,uint8[] products_covered,bytes32 invitation_code)";
+  bytes32 constant internal EIP712_MEMBER_SCHEMA_HASH = keccak256(
+    abi.encodePacked(
+      "Member(",
+      "uint256 membership_numbers,",
+      "uint8[] products_covered,",
+      "bytes32 invitation_code",
+      ")"
+    )
+  );
 
   /*      Constructor      */
 
@@ -92,5 +100,25 @@ contract IxtProtect is Ownable, LibEIP712 {
       s
     );
   }
+
+  /// @dev Calculates EIP712 hash of the member.
+  /// @param member the member struct.
+  /// @return EIP712 hash of the member.
+    function hashMember(Member memory member)
+        internal
+        pure
+        returns (bytes32 result)
+    {
+      bytes32 schemaHash = EIP712_ORDER_SCHEMA_HASH;
+
+      keccak256(
+        abi.encodePacked(
+          EIP712_MEMBER_SCHEMA_HASH,
+          member.membership_number,
+          keccak256(member.products_covered),
+          member.invitation_code
+        )
+      );
+    }
 
 }

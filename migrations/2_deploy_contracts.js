@@ -1,5 +1,5 @@
-const IXTGroupPolicy = artifacts.require("./IXTGroupPolicy.sol")
+var IxtProtect = artifacts.require("./IxtProtect.sol");
 
 module.exports = function(deployer) {
-    deployer.deploy(IXTGroupPolicy)
-}
+  deployer.deploy(IxtProtect);
+};

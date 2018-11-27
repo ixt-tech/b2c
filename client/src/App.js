@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import {BrowserRouter as Router, Redirect, Route, Switch} from 'react-router-dom';
 import Loadable from 'react-loadable';
-import IxtProtekt from "./contracts/IxtProtekt.json";
+import IxtProtect from "./contracts/IxtProtect.json";
 import getWeb3 from "./utils/getWeb3";
 import truffleContract from "truffle-contract";
 import Header from './components/header/index'
@@ -32,7 +32,7 @@ class App extends Component {
       const accounts = await web3.eth.getAccounts();
 
       // Get the contract instance.
-      const Contract = truffleContract(IxtProtekt);
+      const Contract = truffleContract(IxtProtect);
       Contract.setProvider(web3.currentProvider);
       const instance = await Contract.deployed();
 console.log(accounts[0]);

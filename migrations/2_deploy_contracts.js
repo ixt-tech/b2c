@@ -1,5 +1,5 @@
-var IxtProtekt = artifacts.require("./IxtProtekt.sol");
+var IxtProtect = artifacts.require("./IxtProtect.sol");
 
 module.exports = function(deployer) {
-  deployer.deploy(IxtProtekt);
+  deployer.deploy(IxtProtect);
 };

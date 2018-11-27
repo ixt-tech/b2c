@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import {BrowserRouter as Router, Redirect, Route, Switch} from 'react-router-dom';
 import Loadable from 'react-loadable';
-import SimpleStorageContract from "./contracts/SimpleStorage.json";
+import IxtProtekt from "./contracts/IxtProtekt.json";
 import getWeb3 from "./utils/getWeb3";
 import truffleContract from "truffle-contract";
 import Header from './components/header/index'
@@ -32,10 +32,10 @@ class App extends Component {
       const accounts = await web3.eth.getAccounts();
 
       // Get the contract instance.
-      const Contract = truffleContract(SimpleStorageContract);
+      const Contract = truffleContract(IxtProtekt);
       Contract.setProvider(web3.currentProvider);
       const instance = await Contract.deployed();
-
+console.log(accounts[0]);
       // Set web3, accounts, and contract to the state, and then proceed with an
       // example of interacting with the contract's methods.
       this.setState({ web3, accounts, contract: instance });

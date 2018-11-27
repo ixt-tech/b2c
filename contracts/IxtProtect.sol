@@ -17,6 +17,8 @@ contract IxtProtect is Ownable, LibEIP712 {
 
   /*      Variable declarations      */
 
+  /// @dev the address of the approved KYC validator for IXLedger
+  address public validator;
   /// @dev a mapping from member wallet addresses to Member struct
   mapping(address => Member) members;
   /// @dev the same data as `members`, but iterable
@@ -34,13 +36,22 @@ contract IxtProtect is Ownable, LibEIP712 {
 
   /*      Constructor      */
 
-  constructor() public {}
+  constructor(address _validator) public {
+    require(_validator != address(0x0), "Validator address was set to 0.");
+    validator = _validator;
+  }
 
   /*      Main Functions      */
 
   /// @notice 
   /// @param signer address of signer.
-  function join(Member memory member_details, ) public {
+  function join(Member memory member, uint8 v, bytes32 r, bytes32 s) public {
+    bytes32 memberHash = getMemberHash(member);
+
+    require(
+      isValidSignature(validator, memberHash, v, r, s),
+      "Provided signature was invalid."
+    );
 
   }
 
@@ -91,14 +102,16 @@ contract IxtProtect is Ownable, LibEIP712 {
   )
     public
     pure
-    returns (bool)
+    returns (bool isValid)
   {
-    return signer == ecrecover(
-      keccak256("\x19Ethereum Signed Message:\n32", hash),
+    address recovered = ecrecover(
+      hash,
       v,
       r,
       s
     );
+    isValid = signer == recovered;
+    return isValid;
   }
 
   /// @dev Calculates Keccak-256 hash of the member.

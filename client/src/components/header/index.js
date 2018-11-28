@@ -9,7 +9,7 @@ const Header = props => {
   return (
     <div>
 
-      <div className='header'>
+      <div className='navbar'>
         <img src={logo} className='logo' />
       </div>
 

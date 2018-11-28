@@ -7,8 +7,8 @@ import "./App.css";
 
 const Loading = () => <div>Loading...</div>;
 
-const SignUpPage = Loadable({
-  loader: () => import('./components/sign-up-page/index'),
+const AdminPage = Loadable({
+  loader: () => import('./components/admin-page/index'),
   loading: Loading,
 });
 
@@ -26,7 +26,7 @@ class App extends Component {
         <Router>
           <Switch>
             <Route path="/account" component={AccountPage} />
-            <Route path="/sign-up" component={SignUpPage} />
+            <Route path="/admin" component={AdminPage} />
           </Switch>
         </Router>
       </div>

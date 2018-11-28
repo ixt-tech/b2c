@@ -1,21 +1,23 @@
-.header {
+.navbar {
   align-items: flex-start;
   background-color: #575656;
   display: flex;
   flex-direction: column;
   height: 100px;
   justify-content: space-between;
-  padding: 30px; }
-  .title {
-    color: #f7f7f7;
-    font-weight: 300;
-    margin: 0; }
-  .logo {
-    height: 50px; }
-  .sub-header {
-    display: flex;
-    justify-content: space-between;
-    width: 100%; }
-    .sub-header h1 {
-      color: #4aaad7;
-      margin: 0; }
+  padding: 30px;
+  margin-bottom: 20px;
+}
+.title {
+  color: #f7f7f7;
+  font-weight: 300;
+  margin: 0;
+}
+.logo {
+  height: 50px;
+}
+.sub-header {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}

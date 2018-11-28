@@ -1,9 +1,10 @@
 pragma solidity 0.5.0;
 
 import "./lib/Ownable.sol";
-import "./lib/LibEIP712.sol";
+import "./lib/IERC20.sol";
+import "./lib/SafeMath.sol";
 
-contract IxtProtect is Ownable, LibEIP712 {
+contract IxtProtect is Ownable {
 
   /*      Function modifiers      */
 
@@ -40,7 +41,7 @@ contract IxtProtect is Ownable, LibEIP712 {
   /// @dev the address of the approved KYC validator for IXLedger
   address public validator;
   /// @dev the IXT ERC20 Token contract
-  ERC20 public IXTToken;
+  IERC20 public IXTToken;
   /// @dev a mapping from member wallet addresses to Member struct
   mapping(address => Member) members;
   /// @dev the same data as `members`, but iterable
@@ -55,7 +56,7 @@ contract IxtProtect is Ownable, LibEIP712 {
     require(_validator != address(0x0), "Validator address was set to 0.");
     require(_IXTToken != address(0x0), "IXTToken address was set to 0.");
     validator = _validator;
-    IXTToken  = ERC20(_IXTToken);
+    IXTToken  = IERC20(_IXTToken);
   }
 
   /*      Public Functions      */
@@ -72,6 +73,7 @@ contract IxtProtect is Ownable, LibEIP712 {
     userNotRegistered(memberAddress)
   {
     Member memory member = Member(
+      true,
       membershipNumber,
       productsCovered,
       invitationCode

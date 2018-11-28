@@ -3,6 +3,7 @@ const IxtProtect = artifacts.require("./IxtProtect.sol");
 contract("IXTProtect", async (accounts) => {
   let ixtProtect;
 
+  const IXTTokenAddress = "0xfca47962d45adfdfd1ab2d972315db4ce7ccf094";
   const deployer = accounts[0];
   const verifier = accounts[1];
   const user = accounts[2];
@@ -20,12 +21,17 @@ contract("IXTProtect", async (accounts) => {
   }
 
   beforeEach(async () => {
-    ixtProtect = await IxtProtect.new(verifier);
+    ixtProtect = await IxtProtect.new(verifier, IXTTokenAddress);
   });
 
   it("Should inherit the Ownable contract", async () => {
     const owner =  await ixtProtect.owner();
     assert.equal(owner, deployer);
+  });
+
+  it("Should hold the correct IXTToken address", async () => {
+    const addressInContract =  await ixtProtect.IXTToken();
+    assert.equal(addressInContract, IXTTokenAddress);
   });
 
   describe("Join function", () => {

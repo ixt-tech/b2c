@@ -10,13 +10,6 @@ contract("IXTProtect", async (accounts) => {
     PERSONAL_PROTECTION: 0
   };
 
-  const memberTypes = {
-    membershipNumber: "uint256",
-    memberAddress: "address",
-    productsCovered: "uint8[]",
-    invitationCode: "uint256"
-  };
-
   function memberData() {
     return {
       membershipNumber: 123123123,
@@ -26,7 +19,7 @@ contract("IXTProtect", async (accounts) => {
     };
   }
 
-  beforeEach(async => {
+  beforeEach(async () => {
     ixtProtect = await IxtProtect.new(verifier);
   });
 
@@ -36,36 +29,27 @@ contract("IXTProtect", async (accounts) => {
   });
 
   describe("Join function", () => {
+    let member = memberData();
 
-    it("Should allow a member to join if they have a proof signed by the contract owner", async () => {
+    it("Should allow a verifier to join a new user", async () => {
+      ixtProtect.join();
+
+    });
+
+    it("Should not allow a verifier to join an existing user", async () => {
       const member = memberData();
 
-      // 1. Sign the data with `verifier` address
-      const ixtAddress = ixtProtect.address;
-      const signature = signMembershipData(member, verifier, ixtAddress);
-      // 2. Include the data and digital signature in the payload to join() - this should complete without throwing
-      // 3. Assert that the member is now present in the smart contracts storage data
+    });
+
+    it("Should not allow a non-verifier to join a new user", async () => {
+      const member = memberData();
+
+    });
+
+    it("Should not allow a non-verifier to join an existing user", async () => {
+      const member = memberData();
+
     });
   }); 
-
-  function signMembershipData(memdata, signer, contractAddress) {
-    // This call equivalent to getMemberHash in contract
-    const memHash = getMemberHash(memdata);
-
-
-    function getMemberHash(member) {
-      return hashEIP712Message(hashMember(member));
-    }
-
-    function hashMember(member) {
-      // abi.encodePacked() the struct
-    }
-
-    function hashEIP712Message() {
-
-    }
-  }
-
-
 
 });

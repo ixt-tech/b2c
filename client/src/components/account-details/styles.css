@@ -1,5 +1,5 @@
 .ui.cards>.card {
-  background-color: #4D7198;
+  background: url(widget-bg.svg);
   padding: 20px;
   width: 350px;
 }
@@ -15,4 +15,9 @@
 .ui.card>.content>.description, .ui.cards>.card>.content>.description {
   color: #ffffff;
   font-size: large;
+}
+.tx-row {
+    border-radius: 5px;
+    border-width: 1px;
+    border-color: #575656;
 }

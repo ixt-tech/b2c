@@ -6,9 +6,9 @@ import {
   Header,
 } from 'semantic-ui-react';
 
-import './sign-up.css';
+import './styles.css';
 
-class SignUpPage extends React.Component {
+class AdminPage extends React.Component {
   render() {
     return (
       <div>
@@ -18,4 +18,4 @@ class SignUpPage extends React.Component {
   }
 }
 
-export default SignUpPage;
+export default AdminPage;

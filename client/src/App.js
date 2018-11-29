@@ -8,12 +8,12 @@ import "./App.css";
 const Loading = () => <div>Loading...</div>;
 
 const AdminPage = Loadable({
-  loader: () => import('./components/admin-page/index'),
+  loader: () => import('./modules/admin-page'),
   loading: Loading,
 });
 
 const AccountPage = Loadable({
-  loader: () => import('./components/account-page/index'),
+  loader: () => import('./modules/account-page'),
   loading: Loading,
 });
 

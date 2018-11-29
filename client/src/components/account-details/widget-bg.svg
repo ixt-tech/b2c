@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="365px" height="205px" viewBox="0 0 365 205" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 52.3 (67297) - http://www.bohemiancoding.com/sketch -->
+    <title>Rectangle Copy 2</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <linearGradient x1="50%" y1="127.247246%" x2="50%" y2="0%" id="linearGradient-1">
+            <stop stop-color="#3C9BB0" offset="0%"></stop>
+            <stop stop-color="#1C6278" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="IXT-Protect-V2-Copy-9" transform="translate(-250.000000, -29.000000)" fill="url(#linearGradient-1)">
+            <g id="Group-5" transform="translate(250.000000, 29.000000)">
+                <g id="Group-8">
+                    <g id="Widgets/Active">
+                        <rect id="Rectangle-Copy-2" x="0" y="0" width="365" height="205" rx="4"></rect>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

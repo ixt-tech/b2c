@@ -3,7 +3,7 @@ import {
   Image,
 } from 'semantic-ui-react';
 import logo from '../../images/logo.png';
-import './header.css';
+import './styles.css';
 
 const Header = props => {
   return (

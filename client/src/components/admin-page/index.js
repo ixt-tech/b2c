@@ -1,6 +1,9 @@
 import React from 'react';
 import {
-  Container,
+  Card,
+  Button,
+  Image,
+  Header,
 } from 'semantic-ui-react';
 
 import './sign-up.css';
@@ -8,9 +11,9 @@ import './sign-up.css';
 class SignUpPage extends React.Component {
   render() {
     return (
-      <Container>
-        SIGN UP PAGE
-      </Container>
+      <div>
+
+      </div>
     );
   }
 }

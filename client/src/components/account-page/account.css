@@ -1,0 +1,18 @@
+.ui.cards>.card {
+  background-color: #4D7198;
+  padding: 20px;
+  width: 350px;
+}
+.address {
+  color:  #4D7198;
+}
+.ui.cards>.card>.content>.header {
+  color: #ffffff;
+}
+.ui.cards>.card .meta {
+  color: #ffffff;
+}
+.ui.card>.content>.description, .ui.cards>.card>.content>.description {
+  color: #ffffff;
+  font-size: large;
+}

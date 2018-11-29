@@ -6,6 +6,30 @@ import "./lib/SafeMath.sol";
 
 contract IxtProtect is Ownable {
 
+  /*      Events      */
+
+  event Authorised(
+    address memberAddress,
+    uint256 membershipNumber,
+    Products[] productsCovered
+  );
+
+  event Joined(
+    address memberAddress,
+    uint256 membershipNumber,
+    Products[] productsCovered
+  );
+
+  event Deposited(
+    address memberAddress,
+    uint256 amountDeposited    
+  );
+
+  event Withdrawn(
+    address memberAddress,
+    uint256 amountWithdrawn
+  );
+
   /*      Function modifiers      */
 
   modifier onlyValidator() {
@@ -16,10 +40,34 @@ contract IxtProtect is Ownable {
     _;
   }
 
-  modifier userNotRegistered(address memberAddress) {
+  modifier userNotAuthorised(address memberAddress) {
     require(
-      members[memberAddress].initialised != true,
-      "Member is already registered."
+      members[memberAddress].authorisedTimestamp == 0,
+      "Member is already authorised."
+    );
+    _;
+  }
+
+  modifier userIsAuthorised(address memberAddress) {
+    require(
+      members[memberAddress].authorisedTimestamp != 0,
+      "Member is not authorised."
+    );
+    _;
+  }
+
+  modifier userNotJoined(address memberAddress) {
+    require(
+      members[memberAddress].joinedTimestamp == 0,
+      "Member has already joined."
+    );
+    _;
+  }
+
+  modifier userIsJoined(address memberAddress) {
+    require(
+      members[memberAddress].joinedTimestamp != 0,
+      "Member has not joined."
     );
     _;
   }
@@ -27,10 +75,13 @@ contract IxtProtect is Ownable {
   /*      Data types      */
 
   struct Member {
-    bool initialised;
-    uint256 membership_number;
-    Products[] products_covered;
-    bytes32 invitation_code;
+    uint256 authorisedTimestamp;
+    uint256 joinedTimestamp;
+    uint256 membershipNumber;
+    Products[] productsCovered;
+    bytes32 invitationCode;
+    uint256 stakeBalance;
+    uint256 rewardBalance;
   }
 
   /// @dev compiles to smallest uintX possible (ie. uint8 if < 256 entries)
@@ -43,9 +94,15 @@ contract IxtProtect is Ownable {
   /// @dev the IXT ERC20 Token contract
   IERC20 public IXTToken;
   /// @dev a mapping from member wallet addresses to Member struct
-  mapping(address => Member) members;
+  mapping(address => Member) public members;
   /// @dev the same data as `members`, but iterable
-  Member[] members_arr;
+  Member[] public membersArray;
+  /// @dev the total balance of all members
+  uint256 public totalBalance;
+
+  /*      Constants      */
+  uint256 public constant MINIMUM_STAKE = 2000 * (10^DECIMALS);
+  uint256 public constant DECIMALS = 8;
 
   /*      Constructor      */
 
@@ -56,13 +113,13 @@ contract IxtProtect is Ownable {
     require(_validator != address(0x0), "Validator address was set to 0.");
     require(_IXTToken != address(0x0), "IXTToken address was set to 0.");
     validator = _validator;
-    IXTToken  = IERC20(_IXTToken);
+    IXTToken = IERC20(_IXTToken);
   }
 
   /*      Public Functions      */
 
   /// @notice Registers new user as a member after the KYC process
-  function join(
+  function authoriseUser(
     uint256 membershipNumber,
     address memberAddress,
     Products[] memory productsCovered,
@@ -70,35 +127,49 @@ contract IxtProtect is Ownable {
   ) 
     public
     onlyValidator
-    userNotRegistered(memberAddress)
+    userNotAuthorised(memberAddress)
+    userNotJoined(memberAddress)
   {
     Member memory member = Member(
-      true,
+      block.timestamp,
+      0,
       membershipNumber,
       productsCovered,
-      invitationCode
+      invitationCode,
+      0,
+      0
     );
-
-    // Check for approval
     members[memberAddress] = member;
-
+    emit Authorised(memberAddress, membershipNumber, productsCovered);
   }
 
+  /// @notice Called by a member once they have been approved to join the scheme
+  function join()
+    public
+    userIsAuthorised(msg.sender)
+    userNotJoined(msg.sender)
+  {
+    // Implementation in progress
+    deposit(msg.sender, MINIMUM_STAKE);
+    Member storage member = members[msg.sender];
+    emit Joined(msg.sender, member.membershipNumber, member.productsCovered);
+  }
+
+  /// @notice Allows member to deposit funds to increase their stake
+  function deposit(uint256 amount) public {
+    deposit(msg.sender, amount);
+  }
 
   // function withdraw(uint256 amount) public {
 
   // }
 
-  // function deposit(uint256 amount) public {
-
-  // }
-
   // function getAccountBalance() public pure returns (uint256) {
-  // 	return 123;
+
   // }
 
   // function getRewardBalance() public view returns (uint256) {
-  // 	return 123;
+
   // }
 
   // function halt() public {
@@ -113,4 +184,22 @@ contract IxtProtect is Ownable {
 
   // }
 
+  /*      Internal Functions      */
+
+  function deposit(
+    address memberAddress,
+    uint256 amount
+  ) 
+    internal
+    userIsJoined(memberAddress)
+  {
+    require(
+      IXTToken.transferFrom(memberAddress, address(this), amount),
+      "Unable to transfer min stake of IXT - check allowance and balance."  
+    );
+    Member storage member = members[memberAddress];
+    member.stakeBalance = SafeMath.add(member.stakeBalance, amount);
+
+    emit Deposited(memberAddress, amount);
+  }
 }

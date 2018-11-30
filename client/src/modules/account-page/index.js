@@ -16,6 +16,8 @@ import TransactionGrid from "../../components/transaction-grid";
 
 import getWeb3 from "../../utils/getWeb3";
 import getContract from "../../utils/getContract";
+import truffleContract from "truffle-contract";
+import IxtProtect from "../../contracts/IxtProtect.json";
 
 class AccountPage extends React.Component {
 
@@ -32,29 +34,20 @@ class AccountPage extends React.Component {
       // Get the contract instance.
       const contract = getContract(web3);
 
-      const accountBalance = 123;//await instance.getAccountBalance.call();
-      const rewardBalance = 123;//await instance.getRewardBalance.call();
+      const accountBalance = 123;//await instance.getAccountBalance;
+      const rewardBalance = 123;//await instance.getRewardBalance;
       const invitationUrl = 'https://ixt.global/sign-up/123ABC'
 
-      this.setState({ web3, accounts, contract, accountBalance, rewardBalance, invitationUrl });
+      this.setState({ web3, accounts,  accountBalance, rewardBalance, invitationUrl });
 
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert(
-        `Failed to load account. You must connect your account you registered with IXT Protect`
+        `Failed to load your IXT Protect account. You must connect with your account you registered with.`
       );
       console.log(error);
     }
   };
-
-  deposit = async (e) => {
-    console.log('Depositing ', this.state.depositAmount);
-    this.setState({depositAmount: 0.0});
-  }
-
-  withdraw = async (e) => {
-    console.log('Withdrawing ', this.state.withdrawAmount);
-  }
 
   render() {
     if (!this.state.web3) {
@@ -73,19 +66,16 @@ class AccountPage extends React.Component {
 
         <InvitationLink url={this.state.invitationUrl}/>
 
-        <Segment placeholder>
-          <Grid columns={2} stackable textAlign='center'>
-            <Divider vertical></Divider>
-            <Grid.Row verticalAlign='middle'>
-              <Grid.Column>
-                <Deposit />
-              </Grid.Column>
-              <Grid.Column>
-                <Withdraw />
-              </Grid.Column>
-            </Grid.Row>
-          </Grid>
-        </Segment>
+        <Grid columns={2} textAlign='center'>
+          <Grid.Row>
+            <Grid.Column>
+              <Deposit contract={this.state.contract} />
+            </Grid.Column>
+            <Grid.Column>
+              <Withdraw />
+            </Grid.Column>
+          </Grid.Row>
+        </Grid>
 
         <TransactionGrid />
 

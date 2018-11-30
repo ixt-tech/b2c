@@ -101,7 +101,7 @@ contract IxtProtect is Ownable {
   uint256 public totalBalance;
 
   /*      Constants      */
-  uint256 public constant MINIMUM_STAKE = 2000 * (10^DECIMALS);
+  uint256 public constant MINIMUM_STAKE = 2000 * (10**DECIMALS);
   uint256 public constant DECIMALS = 8;
 
   /*      Constructor      */
@@ -149,40 +149,75 @@ contract IxtProtect is Ownable {
     userIsAuthorised(msg.sender)
     userNotJoined(msg.sender)
   {
-    // Implementation in progress
     deposit(msg.sender, MINIMUM_STAKE);
     Member storage member = members[msg.sender];
+    member.joinedTimestamp = block.timestamp;
     emit Joined(msg.sender, member.membershipNumber, member.productsCovered);
   }
 
   /// @notice Allows member to deposit funds to increase their stake
-  function deposit(uint256 amount) public {
+  function deposit(uint256 amount)
+    public
+    userIsJoined(msg.sender)
+  {
     deposit(msg.sender, amount);
   }
 
-  // function withdraw(uint256 amount) public {
+  // TODO - check if withdrawal should be possible before 6 months
+  /// @notice NOT YET TESTED
+  function withdraw(uint256 amount)
+    public
+    userIsJoined(msg.sender)
+  {
+    require(
+      IXTToken.transfer(msg.sender, amount),
+      "Unable to withdraw this value of IXT."  
+    );
+    Member storage member = members[msg.sender];
+    member.stakeBalance = SafeMath.sub(member.stakeBalance, amount);
+    totalBalance = SafeMath.sub(totalBalance, amount);
 
-  // }
+    emit Withdrawn(msg.sender, amount);
+  }
 
-  // function getAccountBalance() public pure returns (uint256) {
+  // TODO - Check that it is okay that this was renamed from `getAccountBalance()`
+  /// @notice NOT YET TESTED
+  function getStakeBalance(address memberAddress)
+    public
+    view
+    userIsJoined(msg.sender)
+    returns (uint256)
+  {
+    return members[memberAddress].stakeBalance;
+  }
 
-  // }
+  /// @notice NOT YET TESTED
+  function getRewardBalance(address memberAddress)
+    public
+    view
+    userIsJoined(msg.sender)
+    returns (uint256)
+  {
+    return members[memberAddress].rewardBalance;
+  }
 
-  // function getRewardBalance() public view returns (uint256) {
+  // TODO - need to clarify what functions this halts
+  /// @notice NOT YET TESTED
+  function halt() public {
+  }
 
-  // }
+  /// @notice NOT YET TESTED
+  function depositPool(uint256 amount) public {
+  }
 
-  // function halt() public {
+  /// @notice NOT YET TESTED
+  function withdrawPool(uint256 amount) public {
+  }
 
-  // }
-
-  // function depositPool(uint256 amount) public {
-
-  // }
-
-  // function withdrawPool(uint256 amount) public {
-
-  // }
+  // TODO - need to clarify if this removes all member data or just resets `join` status
+  /// @notice NOT YET TESTED
+  function removeMember(address userAddress) public {
+  }
 
   /*      Internal Functions      */
 
@@ -191,14 +226,16 @@ contract IxtProtect is Ownable {
     uint256 amount
   ) 
     internal
-    userIsJoined(memberAddress)
   {
     require(
+      IXTToken.allowance(memberAddress, address(this)) >= amount &&
+      IXTToken.balanceOf(memberAddress) >= amount &&
       IXTToken.transferFrom(memberAddress, address(this), amount),
-      "Unable to transfer min stake of IXT - check allowance and balance."  
+      "Unable to deposit IXT - check allowance and balance."  
     );
     Member storage member = members[memberAddress];
     member.stakeBalance = SafeMath.add(member.stakeBalance, amount);
+    totalBalance = SafeMath.add(totalBalance, amount);
 
     emit Deposited(memberAddress, amount);
   }

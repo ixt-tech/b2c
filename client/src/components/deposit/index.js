@@ -13,7 +13,7 @@ class Deposit extends React.Component {
     super(props);
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
-    this.state = {amount: 0.00, isValid: false, contract: this.props.contract};
+    this.state = {isValid: false, contract: this.props.contract};
   }
 
   handleChange(event) {
@@ -39,11 +39,11 @@ class Deposit extends React.Component {
     return (
       <div>
         <h2>Deposit</h2>
-        Deposit to your IXT Protect account. By entering the amount and clicking Deposit you will approve a
+        Deposit to your IXT Protect account. Enter the amount and click Deposit to approve a
         transaction from your account to the IXT Protect pool.
-        <Segment>
+        <Segment className='deposit'>
           <form onSubmit={this.handleSubmit}>
-            <Input labelPosition='left' type='number' placeholder='Amount...' >
+            <Input labelPosition='left' type='number' placeholder='Enter amount...' >
               <Label basic>IXT</Label>
               <input value={this.state.amount} onChange={this.handleChange} />
               <Button type='submit' onClick={this.handleSubmit} disabled={!this.state.isValid}>Deposit</Button>

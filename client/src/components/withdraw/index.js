@@ -3,6 +3,7 @@ import {
   Input,
   Label,
   Button,
+  Segment,
 } from 'semantic-ui-react';
 import './styles.css';
 
@@ -12,8 +13,7 @@ class Withdraw extends React.Component {
     super(props);
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
-    this.web3 = this.props.web3;
-    this.state = {amount: 0.00, isValid: false};
+    this.state = {amount: 0.00, isValid: false, contract: this.props.contract};
   }
 
   handleChange(event) {
@@ -25,20 +25,32 @@ class Withdraw extends React.Component {
     }
   }
 
-  handleSubmit(event) {
+  handleSubmit = async (event) => {
+    const contract = this.state.contract;
+    await contract.deposit(123);
+//    await this.state.contract.deposit(123).then(function(result) {
+//      alert(result);
+//    });
     event.preventDefault();
   }
 
   render() {
     const amount = this.state.amount;
     return (
-      <form onSubmit={this.handleSubmit}>
-        <Input labelPosition='left' type='number' placeholder='Amount...' >
-          <Label basic>IXT</Label>
-          <input value={this.state.amount} onChange={this.handleChange} />
-          <Button type='submit' onClick={this.handleSubmit} disabled={!this.state.isValid}>Withdraw</Button>
-        </Input>
-      </form>
+      <div>
+        <h2>Withdraw</h2>
+        Deposit to your IXT Protect account. By entering the amount and clicking Deposit you will approve a
+        transaction from your account to the IXT Protect pool.
+        <Segment className='withdraw'>
+          <form onSubmit={this.handleSubmit}>
+            <Input labelPosition='left' type='number' placeholder='Amount...' >
+              <Label basic>IXT</Label>
+              <input value={this.state.amount} onChange={this.handleChange} />
+              <Button type='submit' onClick={this.handleSubmit} disabled={!this.state.isValid}>Withdraw</Button>
+            </Input>
+          </form>
+        </Segment>
+      </div>
     );
   }
 

@@ -1,3 +1,16 @@
 div {
   text-align: left;
 }
+
+div.ui.segment.deposit {
+  background-color: #f3f3f3;
+  padding: 30px;
+}
+
+input {
+  width: 330px;
+}
+
+.ui.button {
+  background-color: #10C1A9;
+}

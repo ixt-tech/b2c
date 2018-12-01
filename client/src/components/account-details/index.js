@@ -14,7 +14,6 @@ class AccountDetails extends React.Component {
             <Card.Header>Account Balance</Card.Header>
             <Card.Meta>As of: 01-Dec-2018 23:02:33</Card.Meta>
             <Card.Description>{ this.props.accountBalance } IXT</Card.Description>
-            <Card.Meta>As of: 01-Dec-2018 23:02:33</Card.Meta>
           </Card.Content>
         </Card>
         <Card>

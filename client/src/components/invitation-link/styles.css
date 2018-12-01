@@ -1,3 +1,9 @@
-ui.button.invitation {
+.ui.button.invitation {
   background-color: #ffffff;
+}
+h2 {
+  padding-top: 50px;
+}
+.ui.grid {
+  margin-top: 1rem;
 }

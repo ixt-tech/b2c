@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Divider,
   Grid,
+  Segment,
 } from 'semantic-ui-react';
 import './styles.css';
 

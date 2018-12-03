@@ -6,7 +6,7 @@ contract("IXTProtect", async (accounts) => {
   let ixtProtect;
   let token;
 
-  const IXTTokenAddress = web3.utils.toChecksumAddress("0xfca47962d45adfdfd1ab2d972315db4ce7ccf094");
+  const ixtTokenAddress = web3.utils.toChecksumAddress("0xfca47962d45adfdfd1ab2d972315db4ce7ccf094");
   const randomAddress = web3.utils.toChecksumAddress("0x06117af0811a820e2504ca4581225d7e831dfbe6");
   const deployer = accounts[0];
   const validator = accounts[1];
@@ -62,7 +62,19 @@ contract("IXTProtect", async (accounts) => {
     return token.approve(spender, amount, { from: userAccount });
   }
   function deployIxtProtect(validator, tokenAddress) {
-    return IxtProtect.new(validator, tokenAddress).then(instance => {
+    const minStakeDays = "90";
+    /// 200 IXT for all rewards
+    const invitationReward = "20000000000";
+    const loyaltyReward = "20000000000";
+    const noClaimReward = "20000000000";
+    return IxtProtect.new(
+      validator,
+      tokenAddress,
+      minStakeDays,
+      invitationReward,
+      loyaltyReward,
+      noClaimReward
+    ).then(instance => {
       ixtProtect = instance;
     });
   }
@@ -80,7 +92,7 @@ contract("IXTProtect", async (accounts) => {
   }
 
   beforeEach(async () => {
-    await deployIxtProtect(validator, IXTTokenAddress);
+    await deployIxtProtect(validator, ixtTokenAddress);
   });
 
   describe("General functionality",  () => {
@@ -89,14 +101,14 @@ contract("IXTProtect", async (accounts) => {
       assert.equal(owner, deployer);
     });
 
-    it("should hold the correct IXTToken address", async () => {
-      const addressInContract =  await ixtProtect.IXTToken();
-      assert.equal(addressInContract, IXTTokenAddress);
+    it("should hold the correct ixtToken address", async () => {
+      const addressInContract =  await ixtProtect.ixtToken();
+      assert.equal(addressInContract, ixtTokenAddress);
     });
 
     it("total balance should initially be zero.", async () => {
-      const totalBalance =  await ixtProtect.totalBalance();
-      assert.equal(totalBalance, "0");
+      const totalMemberBalance =  await ixtProtect.totalMemberBalance();
+      assert.equal(totalMemberBalance, "0");
     });
 
     it("validator should be set correctly.", async () => {
@@ -259,12 +271,12 @@ contract("IXTProtect", async (accounts) => {
           it("should allow deposit and user balance and total balance should increase.", async () => {
             await prepContracts(memberData, TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, true);
             await ixtProtect.join( { from: memberData.memberAddress });
-            const totalBalanceBefore = await ixtProtect.totalBalance();
+            const totalMemberBalanceBefore = await ixtProtect.totalMemberBalance();
             const userBalanceBefore = await ixtProtect.members(memberData.memberAddress).then(member => member.stakeBalance);
             await ixtProtect.deposit(val, { from: memberData.memberAddress });
-            const totalBalanceAfter = await ixtProtect.totalBalance();
+            const totalMemberBalanceAfter = await ixtProtect.totalMemberBalance();
             const userBalanceAfter = await ixtProtect.members(memberData.memberAddress).then(member => member.stakeBalance);
-            assert(balanceCheck(totalBalanceBefore, totalBalanceAfter, val));
+            assert(balanceCheck(totalMemberBalanceBefore, totalMemberBalanceAfter, val));
             assert(balanceCheck(userBalanceBefore, userBalanceAfter, val));
           });
         });

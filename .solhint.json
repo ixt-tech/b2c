@@ -20,6 +20,7 @@
         "not-rely-on-block-hash": "error",
         "avoid-low-level-calls": "error",
         "reentrancy": "error",
+        "not-rely-on-time": false,
 
         "__COMMENT": "// Style guide rules",
         "func-name-mixedcase": "error",
@@ -39,7 +40,7 @@
         "indent": ["error", 2],
         "bracket-align": "error",
         "array-declaration-spaces": "error",
-        "separate-by-one-line-in-contract": "error",
+        "separate-by-one-line-in-contract": false,
         "expression-indent": "error",
         "statement-indent": "error",
         "space-after-comma": "error",

@@ -16,35 +16,51 @@ class AccountDialog extends React.Component {
     super(props);
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
-    const account = this.props.account ? this.props.account : {};
-    this.state = {isValid: false, contract: this.props.contract, account: account};
+    this.handleClose = this.handleClose.bind(this);
+    const account = this.props.account ? this.props.account : this.newAccount();
+    this.state = {
+      isValid: false,
+      modalOpen: false,
+      contract: this.props.contract,
+      account: account
+    };
   }
 
-  handleChange(event) {
-    console.log(event);
-    this.setState({amount: event.target.value});
-    if(event.target.value && event.target.value > 0) {
-      this.setState({isValid: true});
-    } else {
-      this.setState({isValid: false});
-    }
+  handleChange(event, { name, value }) {
+    const account = this.state.account;
+    account[name] = value;
+    this.setState({ account: account });
   }
 
   handleSubmit = async (event) => {
-    console.log(this.state.account);
+    // call contract with new account
+    this.setState({ account: this.newAccount() });
+    this.setState({ modalOpen: false });
     event.preventDefault();
   }
 
+  newAccount() {
+    return {
+      membershipNumber: '',
+      memberAddress: '',
+      productsCovered: '',
+      invitationCode: ''
+    };
+  }
+
+  handleOpen = () => this.setState({ modalOpen: true })
+  handleClose = () => this.setState({ modalOpen: false })
+
   render() {
     return (
-      <Modal size='tiny' trigger={<Button onClick={this.handleOpen}>Add Account</Button>}>
-        <Modal.Header>{this.state.account ? 'Edit' : 'New'} Account</Modal.Header>
+      <Modal size='tiny' open={this.state.modalOpen} trigger={<Button onClick={this.handleOpen} onClose={this.handleClose}>Add Account</Button>}>
+        <Modal.Header>{this.state.account.id ? 'Edit' : 'New'} Account</Modal.Header>
         <Modal.Content>
           <Form onSubmit={this.handleSubmit}>
-            <Form.Input placeholder='Membership ID' value={this.state.account.membershipNumber} onChange={this.handleChange} />
-            <Form.Input placeholder='Address' value={this.state.account.memberAddress} onChange={this.handleChange} />
-            <Form.Input placeholder='Products' value={this.state.account.productsCovered} onChange={this.handleChange} />
-            <Form.Input placeholder='Invitation Code' value={this.state.account.invitationCode} onChange={this.handleChange} />
+            <Form.Input placeholder='Membership ID' name='membershipNumber' value={this.state.account.membershipNumber} onChange={this.handleChange} />
+            <Form.Input placeholder='Address' name='memberAddress' value={this.state.account.memberAddress} onChange={this.handleChange} />
+            <Form.Input placeholder='Products' name='productsCovered' value={this.state.account.productsCovered} onChange={this.handleChange} />
+            <Form.Input placeholder='Invitation Code' name='invitationCode' value={this.state.account.invitationCode} onChange={this.handleChange} />
           </Form>
         </Modal.Content>
         <Modal.Actions>

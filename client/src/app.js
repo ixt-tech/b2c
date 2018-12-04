@@ -3,7 +3,7 @@ import {BrowserRouter as Router, Redirect, Route, Switch} from 'react-router-dom
 import Loadable from 'react-loadable';
 import Header from './components/header/index'
 
-import "./App.css";
+import "./app.css";
 
 const Loading = () => <div>Loading...</div>;
 

@@ -28,9 +28,6 @@ class Deposit extends React.Component {
   handleSubmit = async (event) => {
     const contract = this.state.contract;
     await contract.deposit(123);
-//    await this.state.contract.deposit(123).then(function(result) {
-//      alert(result);
-//    });
     event.preventDefault();
   }
 

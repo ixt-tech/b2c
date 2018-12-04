@@ -5,6 +5,7 @@
   "dependencies": {
     "bignumber.js": "^8.0.1",
     "react": "^16.6.3",
+    "react-data-grid": "^6.0.1",
     "react-dom": "^16.4.2",
     "react-loadable": "^5.4.0",
     "react-router": "^4.3.1",

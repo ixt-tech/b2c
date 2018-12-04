@@ -4,6 +4,7 @@ import {
   Segment,
   Grid,
   Divider,
+  Button,
 } from 'semantic-ui-react';
 
 import './styles.css';
@@ -16,12 +17,10 @@ import TransactionGrid from "../../components/transaction-grid";
 
 import getWeb3 from "../../utils/getWeb3";
 import getContract from "../../utils/getContract";
-import truffleContract from "truffle-contract";
-import IxtProtect from "../../contracts/IxtProtect.json";
 
 class AccountPage extends React.Component {
 
-  state = { storageValue: 0, web3: null, accounts: null, contract: null };
+  state = { web3: null, accounts: null, contract: null };
 
   componentDidMount = async () => {
     try {
@@ -34,7 +33,7 @@ class AccountPage extends React.Component {
       // Get the contract instance.
       const contract = getContract(web3);
 
-      const accountBalance = 123;//await instance.getAccountBalance;
+      const accountBalance = 123;
       const rewardBalance = 123;//await instance.getRewardBalance;
       const invitationUrl = 'https://ixt.global/sign-up/123ABC'
 

@@ -41,6 +41,20 @@ contract IxtProtect is Ownable, Pausable {
     uint256 amount
   );
 
+  event MemberRefunded(
+    address memberAddress,
+    uint256 amountRefunded
+  );
+
+  event PoolBalanceRefunded(
+    address refundRecipient,
+    uint256 amountRefunded
+  );
+
+  event ContractDrained(
+    address drainInitiator
+  );
+
   /*      Function modifiers      */
 
   modifier onlyValidator() {
@@ -122,8 +136,8 @@ contract IxtProtect is Ownable, Pausable {
   uint256 public totalPoolBalance;
 
   /*      Constants      */
-  uint256 public constant MINIMUM_STAKE = 2000 * (10**DECIMALS);
-  uint256 public constant DECIMALS = 8;
+  uint256 public constant MINIMUM_STAKE = 2000 * (10**IXT_DECIMALS);
+  uint256 public constant IXT_DECIMALS = 8;
 
   /*      Constructor      */
 
@@ -180,9 +194,9 @@ contract IxtProtect is Ownable, Pausable {
   /// @notice Called by a member once they have been approved to join the scheme
   function join()
     public
+    whenNotPaused()
     userIsAuthorised(msg.sender)
     userNotJoined(msg.sender)
-    whenNotPaused()
   {
     deposit(msg.sender, MINIMUM_STAKE, false);
     Member storage member = members[msg.sender];
@@ -193,18 +207,17 @@ contract IxtProtect is Ownable, Pausable {
   /// @notice Allows member to deposit funds to increase their stake
   function deposit(uint256 amount)
     public
-    userIsJoined(msg.sender)
     whenNotPaused()
+    userIsJoined(msg.sender)
   {
     deposit(msg.sender, amount, false);
   }
 
   function withdraw(uint256 amount)
     public
-    userIsJoined(msg.sender)
     whenNotPaused()
+    userIsJoined(msg.sender)
   {
-    /// @notice NOT YET TESTED
     Member storage member = members[msg.sender];
     uint256 elapsedTime = block.timestamp - member.joinedTimestamp;
     require(
@@ -212,7 +225,9 @@ contract IxtProtect is Ownable, Pausable {
       "Minimum stake period is not complete."
     );
 
+    bool sufficientBalance = (member.stakeBalance + member.rewardBalance) > amount;
     require(
+      sufficientBalance &&
       ixtToken.transfer(msg.sender, amount),
       "Unable to withdraw this value of IXT."  
     );
@@ -246,31 +261,27 @@ contract IxtProtect is Ownable, Pausable {
   function getAccountBalance(address memberAddress)
     public
     view
-    userIsJoined(msg.sender)
+    userIsJoined(memberAddress)
     returns (uint256)
   {
-    /// @notice NOT YET TESTED
     return SafeMath.add(members[memberAddress].stakeBalance, members[memberAddress].rewardBalance);
   }
 
   function getStakeBalance(address memberAddress)
     public
     view
-    userIsJoined(msg.sender)
+    userIsJoined(memberAddress)
     returns (uint256)
   {
-    /// @notice NOT YET TESTED
     return members[memberAddress].stakeBalance;
   }
 
-  /// @notice NOT YET TESTED
   function getRewardBalance(address memberAddress)
     public
     view
-    userIsJoined(msg.sender)
+    userIsJoined(memberAddress)
     returns (uint256)
   {
-    /// @notice NOT YET TESTED
     return members[memberAddress].rewardBalance;
   }
 
@@ -278,7 +289,6 @@ contract IxtProtect is Ownable, Pausable {
     public
     onlyOwner
   {
-    /// @notice NOT YET TESTED
     deposit(msg.sender, amountToDeposit, true);
   }
 
@@ -286,9 +296,9 @@ contract IxtProtect is Ownable, Pausable {
     public
     onlyOwner
   {
-    /// @notice NOT YET TESTED
-    if (amountToWithdraw > 0 && totalPoolBalance >= amountToWithdraw) {
+    if (amountToWithdraw > 0) {
       require(
+        totalPoolBalance >= amountToWithdraw &&
         ixtToken.transfer(msg.sender, amountToWithdraw),
         "Unable to withdraw this value of IXT."  
       );
@@ -302,15 +312,35 @@ contract IxtProtect is Ownable, Pausable {
     userIsAuthorised(userAddress)
     onlyOwner
   {
-    /// @notice NOT YET TESTED
     cancelMembership(userAddress);
+  }
+
+  function drain() public onlyOwner {
+    /// @dev Refund and delete all members
+    for (uint256 index = 0; index < membersArray.length; index++) {
+      address memberAddress = membersArray[index];
+      uint256 amountRefunded = refundUserBalance(memberAddress);
+      delete members[memberAddress];
+
+      emit MemberRefunded(memberAddress, amountRefunded);
+    }
+    delete membersArray;
+
+    /// @dev Refund the pool balance
+    require(
+      ixtToken.transfer(msg.sender, totalPoolBalance),
+      "Unable to withdraw this value of IXT."
+    );
+    emit PoolBalanceRefunded(msg.sender, totalPoolBalance);
+    totalPoolBalance = 0;
+    
+    emit ContractDrained(msg.sender);
   }
 
   function setInvitationReward(uint256 _invitationReward)
     public
     onlyOwner
   {
-    /// @notice NOT YET TESTED
     invitationReward = _invitationReward;
   }
 
@@ -318,7 +348,6 @@ contract IxtProtect is Ownable, Pausable {
     public
     onlyOwner
   {
-    /// @notice NOT YET TESTED
     loyaltyReward = _loyaltyReward;
   }
 
@@ -326,22 +355,44 @@ contract IxtProtect is Ownable, Pausable {
     public
     onlyOwner
   {
-    /// @notice NOT YET TESTED
     noClaimReward = _noClaimReward; 
   }
 
-  function setMinimumStakePeriod(uint256 minimumStakeDays)
+  function setMinimumStakeDays(uint256 minimumStakeDays)
     public
     onlyOwner
   {
-    /// @notice NOT YET TESTED
     minimumStakePeriodSeconds = minimumStakeDays * 24 * 60 * 60;
+  }
+
+  function getMinimumStakeDays()
+    public
+    view
+    returns (uint256)
+  {
+    return minimumStakePeriodSeconds / 60 / 60 / 24;
   }
 
   /*      Internal Functions      */
 
   function cancelMembership(address memberAddress) internal {
+    uint256 amountRefunded = refundUserBalance(memberAddress);
+
+    delete members[memberAddress];
+
+    removeMemberFromArray(memberAddress);
+
+    emit MemberCancelled(memberAddress, amountRefunded);
+  }
+
+  function refundUserBalance(
+    address memberAddress
+  ) 
+    internal
+    returns (uint256 amountRefunded)
+  {
     Member storage member = members[memberAddress];
+
     uint256 amountToRefund = SafeMath.add(member.rewardBalance, member.stakeBalance);
     bool userJoined = member.joinedTimestamp != 0;
     if (amountToRefund > 0 && userJoined) {
@@ -351,18 +402,18 @@ contract IxtProtect is Ownable, Pausable {
       );
       totalMemberBalance = SafeMath.sub(totalMemberBalance, amountToRefund);
     }
-    delete members[memberAddress];
+    return amountToRefund;
+  }
 
+  function removeMemberFromArray(address memberAddress) internal {
     /// @dev removing the member address from the membersArray
-    for (uint256 index; index < membersArray.length - 1; index++){
+    for (uint256 index; index < membersArray.length; index++) {
       if (membersArray[index] == memberAddress) {
         membersArray[index] = membersArray[membersArray.length - 1];
         membersArray.length -= 1;
         break;
       }
     }
-
-    emit MemberCancelled(memberAddress, amountToRefund);
   }
 
   function deposit(

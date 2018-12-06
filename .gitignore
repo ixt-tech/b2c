@@ -10,3 +10,9 @@ client/.idea/misc.xml
 client/.idea/modules.xml
 client/.idea/vcs.xml
 client/.idea/workspace.xml
+
+# Node modules directory
+node_modules/
+
+# VS Code configs
+.vscode/

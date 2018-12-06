@@ -23,7 +23,7 @@ contract Pausable is PauserRole {
    * @dev Modifier to make a function callable only when the contract is not paused.
    */
   modifier whenNotPaused() {
-    require(!_paused);
+    require(!_paused, "Cannot call when paused.");
     _;
   }
 
@@ -31,7 +31,7 @@ contract Pausable is PauserRole {
    * @dev Modifier to make a function callable only when the contract is paused.
    */
   modifier whenPaused() {
-    require(_paused);
+    require(_paused, "Can only call this when paused.");
     _;
   }
 

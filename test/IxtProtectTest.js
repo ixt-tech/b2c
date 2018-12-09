@@ -391,64 +391,6 @@ contract("IXTProtect", (accounts) => {
     });
   });
 
-  // describe("Deposit function", () => {
-  //   let val = "1";
-  //   describe("when user is authorised", () => {
-  //     describe("and user is joined", () => {
-  //       describe("and user has sufficient balance", () => {
-  //         it("should allow deposit and user balance and total balance should increase.", async () => {
-  //           await prepContracts(memberData, TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, true);
-  //           await ixtProtect.join( { from: memberData.memberAddress });
-  //           const totalMemberBalanceBefore = await ixtProtect.totalMemberBalance();
-  //           const userBalanceBefore = await ixtProtect.members(memberData.memberAddress).then(member => member.stakeBalance);
-  //           await ixtProtect.deposit(val, { from: memberData.memberAddress });
-  //           const totalMemberBalanceAfter = await ixtProtect.totalMemberBalance();
-  //           const userBalanceAfter = await ixtProtect.members(memberData.memberAddress).then(member => member.stakeBalance);
-  //           assert(balanceCheck(totalMemberBalanceBefore, totalMemberBalanceAfter, val));
-  //           assert(balanceCheck(userBalanceBefore, userBalanceAfter, val));
-  //         });
-  //       });
-  //       describe("and user doesn't have sufficient balance", () => {
-  //         it("should not allow deposit.", async () => {
-  //           await prepContracts(memberData, TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, true);
-  //           await ixtProtect.join( { from: memberData.memberAddress });
-  //           const expectedReason = ErrorReasons.cannotDeposit;
-  //           try {
-  //             await ixtProtect.deposit("424242424242424242424242424242424242", { from: memberData.memberAddress });
-  //             assert.fail(`Expected '${expectedReason}' failure not received`);
-  //           } catch (error) {
-  //             assert.equal(error.reason, expectedReason);
-  //           }
-  //         });
-  //       });
-  //     });
-  //     describe("and user is not joined", () => {
-  //       it("should not allow deposit.", async () => {
-  //         await prepContracts(memberData, TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, true);
-  //         const expectedReason = ErrorReasons.userIsJoined;
-  //         try {
-  //           await ixtProtect.deposit(val, { from: memberData.memberAddress });
-  //           assert.fail(`Expected '${expectedReason}' failure not received`);
-  //         } catch (error) {
-  //           assert.equal(error.reason, expectedReason);
-  //         }
-  //       });
-  //     });
-  //   });
-  //   describe("and user is not authorised", () => {
-  //     it("should not allow deposit.", async () => {
-  //       await prepContracts(memberData, TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, false);
-  //       const expectedReason = ErrorReasons.userIsJoined;
-  //       try {
-  //         await ixtProtect.deposit(val, { from: memberData.memberAddress });
-  //         assert.fail(`Expected '${expectedReason}' failure not received`);
-  //       } catch (error) {
-  //         assert.equal(error.reason, expectedReason);
-  //       }
-  //     });
-  //   });
-  // });
-
   // describe("Withdraw function", () => {
   //   let depositAmount = "1";
   //   const mem = memberData;

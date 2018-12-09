@@ -294,16 +294,6 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   //   cancelMembershipInternal(msg.sender);
   // }
 
-
-  // /// @notice Allows member to deposit funds to increase their stake
-  // function deposit(uint256 amount)
-  //   public
-  //   whenNotPaused()
-  //   userIsJoined(msg.sender)
-  // {
-  //   deposit(msg.sender, amount, false);
-  // }
-
 /*
   function withdraw(uint256 amount)
     public

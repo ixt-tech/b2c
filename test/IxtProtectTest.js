@@ -22,12 +22,12 @@ contract("IXTProtect", (accounts) => {
   const memberData = {
     membershipNumber: "123123123",
     memberAddress: user,
-    invitationCode: "0xAB"
+    invitationCode: "0xab00000000000000000000000000000000000000000000000000000000000000"
   };
   const otherMemberData = {
     membershipNumber: "987987987",
     memberAddress: user2,
-    invitationCode: "0xCD"
+    invitationCode: "0xcd00000000000000000000000000000000000000000000000000000000000000"
   };
   const FailTypes = {
     revert: "revert",
@@ -68,14 +68,14 @@ contract("IXTProtect", (accounts) => {
   const lessDaysThanMinimumStakePeriod = parseInt(defaultLoyaltyPeriod) - 1;
   const moreDaysThanMinimumStakePeriod = parseInt(defaultLoyaltyPeriod) + 1;
 
-  // function authoriseUser(instance, member, sender) {
-  //   return instance.authoriseUser(
-  //     member.membershipNumber,
-  //     member.memberAddress,
-  //     member.invitationCode,
-  //     { from: sender }
-  //   );
-  // }
+  function authoriseUser(instance, member, sender) {
+    return instance.authoriseUser(
+      member.membershipNumber,
+      member.memberAddress,
+      member.invitationCode,
+      { from: sender }
+    );
+  }
   function createNewToken() {
     return MockToken.new().then(instance => {
       token = instance;
@@ -101,21 +101,21 @@ contract("IXTProtect", (accounts) => {
     });
   }
 
-  // function prepContracts(member, userBalance, approvalAmount, shouldAuthorise, validatorAddress = validator) {
-  //   return createNewToken().then(() => {
-  //     return giveUserBalanceOfTokens(member.memberAddress, userBalance);
-  //   }).then(() => {
-  //     return giveUserBalanceOfTokens(deployer, userBalance);
-  //   }).then(() => {
-  //     return deployIxtProtect(validatorAddress, token.address, { from: deployer });
-  //   }).then(() => {
-  //     return setUserTokenApproval(member.memberAddress, ixtProtect.address, approvalAmount);
-  //   }).then(() => {
-  //     return setUserTokenApproval(deployer, ixtProtect.address, approvalAmount);
-  //   }).then(() => {
-  //     if (shouldAuthorise) return authoriseUser(ixtProtect, member, validatorAddress);
-  //   });
-  // }
+  function prepContracts(member, userBalance, approvalAmount, shouldAuthorise, validatorAddress = validator) {
+    return createNewToken().then(() => {
+      return giveUserBalanceOfTokens(member.memberAddress, userBalance);
+    }).then(() => {
+      return giveUserBalanceOfTokens(deployer, userBalance);
+    }).then(() => {
+      return deployIxtProtect(validatorAddress, token.address, { from: deployer });
+    }).then(() => {
+      return setUserTokenApproval(member.memberAddress, ixtProtect.address, approvalAmount);
+    }).then(() => {
+      return setUserTokenApproval(deployer, ixtProtect.address, approvalAmount);
+    }).then(() => {
+      if (shouldAuthorise) return authoriseUser(ixtProtect, member, validatorAddress);
+    });
+  }
 
   function balanceCheck(beforeBalance, afterBalance, expectedDifference) {
     const bef = new BN(beforeBalance);
@@ -190,6 +190,10 @@ contract("IXTProtect", (accounts) => {
       assert(ixtProtect.hasOwnProperty("membersArray"));
     });
 
+    it("should not initially contain any entries in the members array.", async () => {
+      await expectThrow(ixtProtect.membersArray(0));
+    });
+
     it("invitationReward should be correct.", async () => {
       const invitationReward =  await ixtProtect.invitationReward();
       assert.equal(invitationReward, TokenAmounts.defaultInvitationReward);
@@ -237,48 +241,52 @@ contract("IXTProtect", (accounts) => {
     });
   });
 
-  // describe("AuthoriseUser function", () => {
-  //   it("should allow a validator to authorise a new user", async () => {
-  //     await authoriseUser(ixtProtect, memberData, validator);
-  //     const newMember = await ixtProtect.members(memberData.memberAddress);
-  //     assert.equal(newMember.joinedTimestamp, "0");
-  //     assert.equal(newMember.stakeBalance, "0");
-  //     assert.equal(newMember.rewardBalance, "0");
-  //     assert.equal(newMember.membershipNumber, memberData.membershipNumber);
-  //   });
+  describe("AuthoriseUser function", () => {
+    it("should allow a validator to authorise a new user", async () => {
+      const tx = await authoriseUser(ixtProtect, memberData, validator);
+      const blockTimestamp = await web3.eth.getBlock(tx.receipt.blockHash).then(b => b.timestamp);
+      const newMember = await ixtProtect.members(memberData.memberAddress);
+      assert.equal(newMember.authorisedTimestamp, blockTimestamp);
+      assert.equal(newMember.joinedTimestamp, "0");
+      assert.equal(newMember.timestampOfPreviousClaim, "0");
+      assert.equal(newMember.membershipNumber, memberData.membershipNumber);
+      assert.equal(newMember.invitationCode, memberData.invitationCode);
+      assert.equal(newMember.stakeBalance, "0");
+      assert.equal(newMember.invitationRewards, "0");
+    });
 
-  //   it("should not allow a validator to authorise an authorised user", async () => {
-  //     const expectedReason = ErrorReasons.userNotAuthorised;
-  //     await authoriseUser(ixtProtect, memberData, validator);
-  //     try {
-  //       await authoriseUser(ixtProtect, memberData, validator);
-  //       assert.fail(`Expected '${expectedReason}' failure not received`);
-  //     } catch (error) {
-  //       assert.equal(error.reason, expectedReason);
-  //     }
-  //   });
+    it("should not allow a validator to authorise an authorised user", async () => {
+      const expectedReason = ErrorReasons.userNotAuthorised;
+      await authoriseUser(ixtProtect, memberData, validator);
+      try {
+        await authoriseUser(ixtProtect, memberData, validator);
+        assert.fail(`Expected '${expectedReason}' failure not received`);
+      } catch (error) {
+        assert.equal(error.reason, expectedReason);
+      }
+    });
 
-  //   it("should not allow a non-validator to authorise a new user", async () => {
-  //     const expectedReason = ErrorReasons.onlyValidator;
-  //     try {
-  //       await authoriseUser(ixtProtect, memberData, unusedAccount);
-  //       assert.fail(`Expected '${expectedReason}' failure not received`);
-  //     } catch (error) {
-  //       assert.equal(error.reason, expectedReason);
-  //     }
-  //   });
+    it("should not allow a non-validator to authorise a new user", async () => {
+      const expectedReason = ErrorReasons.onlyValidator;
+      try {
+        await authoriseUser(ixtProtect, memberData, unusedAccount);
+        assert.fail(`Expected '${expectedReason}' failure not received`);
+      } catch (error) {
+        assert.equal(error.reason, expectedReason);
+      }
+    });
 
-  //   it("should not allow a non-validator to authorise an authorised user", async () => {
-  //     const expectedReason = ErrorReasons.onlyValidator;
-  //     await authoriseUser(ixtProtect, memberData, validator);
-  //     try {
-  //       await authoriseUser(ixtProtect, memberData, unusedAccount);
-  //       assert.fail(`Expected '${expectedReason}' failure not received`);
-  //     } catch (error) {
-  //       assert.equal(error.reason, expectedReason);
-  //     }
-  //   });
-  // }); 
+    it("should not allow a non-validator to authorise an authorised user", async () => {
+      const expectedReason = ErrorReasons.onlyValidator;
+      await authoriseUser(ixtProtect, memberData, validator);
+      try {
+        await authoriseUser(ixtProtect, memberData, unusedAccount);
+        assert.fail(`Expected '${expectedReason}' failure not received`);
+      } catch (error) {
+        assert.equal(error.reason, expectedReason);
+      }
+    });
+  }); 
 
   // describe("Join function", () => {
   //   describe("when the allowance has been set to a correct level.", () => {

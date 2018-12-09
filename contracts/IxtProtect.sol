@@ -227,34 +227,36 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   /*      (member control)      */
 
 
-  // /// @notice Registers new user as a member after the KYC process
-  // function authoriseUser(
-  //   uint256 _membershipNumber,
-  //   address _memberAddress,
-  //   bytes32 _invitationCode
-  // ) 
-  //   public
-  //   onlyValidator
-  //   userNotAuthorised(_memberAddress)
-  //   userNotJoined(_memberAddress)
-  // {
-  //   require(
-  //     _memberAddress != address(0x0),
-  //     "Member address was set to 0."
-  //   );
-  //   Member memory member = Member({
-  //     authorisedTimestamp: block.timestamp,
-  //     joinedTimestamp: 0,
-  //     timestampOfPreviousClaim: 0,
-  //     membershipNumber: _membershipNumber,
-  //     invitationCode: _invitationCode,
-  //     stakeBalance: 0,
-  //     invitationRewards: 0
-  //   });
-  //   members[_memberAddress] = member;
-  //   membersArray.push(_memberAddress);
-  //   emit Authorised(_memberAddress, _membershipNumber);
-  // }
+  /// @notice Registers new user as a member after the KYC process
+  /// @notice This function should not add the invitationCode
+  /// to the mapping yet, this should only happen after join
+  function authoriseUser(
+    uint256 _membershipNumber,
+    address _memberAddress,
+    bytes32 _invitationCode
+  ) 
+    public
+    onlyValidator
+    userNotAuthorised(_memberAddress)
+    userNotJoined(_memberAddress)
+  {
+    require(
+      _memberAddress != address(0x0),
+      "Member address was set to 0."
+    );
+    Member memory member = Member({
+      authorisedTimestamp: block.timestamp,
+      joinedTimestamp: 0,
+      timestampOfPreviousClaim: 0,
+      membershipNumber: _membershipNumber,
+      invitationCode: _invitationCode,
+      stakeBalance: 0,
+      invitationRewards: 0
+    });
+    members[_memberAddress] = member;
+    membersArray.push(_memberAddress);
+    emit Authorised(_memberAddress, _membershipNumber);
+  }
 
   /// @notice Called by a member once they have been approved to join the scheme
   // function join(StakeLevel _stakeLevel)

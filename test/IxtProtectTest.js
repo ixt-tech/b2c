@@ -17,7 +17,6 @@ contract("IXTProtect", (accounts) => {
   const user = accounts[2];
   const user2 = accounts[3];
   const unusedAccount = accounts[4];
-  const defaultReward = "20000000000";
   const defaultLoyaltyPercentage = "10";
   const defaultLoyaltyPeriod = "90";
   const memberData = {
@@ -30,11 +29,22 @@ contract("IXTProtect", (accounts) => {
     memberAddress: user2,
     invitationCode: "0xCD"
   };
+  const FailTypes = {
+    revert: "revert",
+    throw: "invalidOpcode",
+    outOfGas: "outOfGas"
+  };
+  const LOW = 0;
+  const MEDIUM = 1;
+  const HIGH = 2;
   const TokenAmounts = {
     noTokens: "0",
-    lowStakingLevel:    "100000000000",  //  1000 IXT
-    mediumStakingLevel: "500000000000",  //  5000 IXT
-    highStakingLevel:  "1000000000000",  // 10000 IXT
+    stakingLevels: [
+      "100000000000",  //  1000 IXT  - LOW
+      "500000000000",  //  5000 IXT  - MEDIUM
+      "1000000000000",  // 10000 IXT - HIGH
+    ],
+    defaultInvitationReward: "20000000000", // 200 IXT
     // There are 8 decimals in the IXT ERC20 token
     IXTDecimals: "8"
   };
@@ -52,12 +62,8 @@ contract("IXTProtect", (accounts) => {
     onlyPauser: "Can only be called by pauser.",
     whenNotPaused: "Cannot call when paused.",
     whenPaused: "Can only call this when paused.",
-    isValidStakeLevel: "Is not valid a staking level."
-  };
-  const FailTypes = {
-    revert: "revert",
-    throw: "invalidOpcode",
-    outOfGas: "outOfGas"
+    isValidStakeLevel: "Is not valid a staking level.",
+    isValidLoyaltyPercentage: "Loyalty reward percentage must be between 0 and 100."
   };
   const lessDaysThanMinimumStakePeriod = parseInt(defaultLoyaltyPeriod) - 1;
   const moreDaysThanMinimumStakePeriod = parseInt(defaultLoyaltyPeriod) + 1;
@@ -82,18 +88,13 @@ contract("IXTProtect", (accounts) => {
     return token.approve(spender, amount, { from: userAccount });
   }
   function deployIxtProtect(validator, tokenAddress) {
-    const invitationReward = defaultReward;
     return IxtProtect.new(
       validator,
       defaultLoyaltyPeriod,
       tokenAddress,
-      invitationReward,
+      TokenAmounts.defaultInvitationReward,
       defaultLoyaltyPercentage,
-      [
-        TokenAmounts.lowStakingLevel,
-        TokenAmounts.mediumStakingLevel,
-        TokenAmounts.highStakingLevel,
-      ],
+      TokenAmounts.stakingLevels,
       { from: deployer }
     ).then(instance => {
       ixtProtect = instance;
@@ -191,18 +192,48 @@ contract("IXTProtect", (accounts) => {
 
     it("invitationReward should be correct.", async () => {
       const invitationReward =  await ixtProtect.invitationReward();
-      assert.equal(invitationReward, defaultReward);
+      assert.equal(invitationReward, TokenAmounts.defaultInvitationReward);
     });
 
-    it("loyaltyReward should be correct.", async () => {
+    it("loyaltyRewardPercentage should be correct.", async () => {
       const loyaltyRewardChanges =  await ixtProtect.loyaltyRewardChanges(0);
       assert.equal(loyaltyRewardChanges.loyaltyRewardPercentage.toString(), defaultLoyaltyPercentage);
       await expectThrow(ixtProtect.loyaltyRewardChanges(1));
     });
 
+    it("should not allow loyaltyRewardPercentage that is too high.", async () => {
+      await expectRevert(deploy(-1), ErrorReasons.isValidLoyaltyPercentage);
+      await expectRevert(deploy(101), ErrorReasons.isValidLoyaltyPercentage);
+      await expectRevert(deploy(41322131), ErrorReasons.isValidLoyaltyPercentage);
+      function deploy(testPercentage) {
+        return IxtProtect.new(
+          validator,
+          defaultLoyaltyPeriod,
+          ixtTokenAddress,
+          TokenAmounts.defaultInvitationReward,
+          testPercentage,
+          TokenAmounts.stakingLevels,
+          { from: deployer }
+        );
+      }
+    });
+
     it("loyaltyPeriod should be correct.", async () => {
       const loyaltyPeriod =  await ixtProtect.loyaltyPeriod();
       assert.equal(loyaltyPeriod, defaultLoyaltyPeriod);
+    });
+
+    it("staking levels should be correct.", async () => {
+      const lowStakingLevel =  await ixtProtect.ixtStakingLevels(LOW).then(v => v.toString());
+      const mediumStakingLevel =  await ixtProtect.ixtStakingLevels(MEDIUM).then(v => v.toString());
+      const highStakingLevel =  await ixtProtect.ixtStakingLevels(HIGH).then(v => v.toString());
+      assert.equal(lowStakingLevel, TokenAmounts.stakingLevels[LOW]);
+      assert.equal(mediumStakingLevel, TokenAmounts.stakingLevels[MEDIUM]);
+      assert.equal(highStakingLevel, TokenAmounts.stakingLevels[HIGH]);
+    });
+
+    it("should only allow you to get three staking levels.", async () => {
+      await expectThrow(ixtProtect.ixtStakingLevels(HIGH + 1));
     });
   });
 

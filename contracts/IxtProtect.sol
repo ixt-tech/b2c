@@ -259,18 +259,19 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   }
 
   /// @notice Called by a member once they have been approved to join the scheme
-  // function join(StakeLevel _stakeLevel)
-  //   public
-  //   whenNotPaused()
-  //   userIsAuthorised(msg.sender)
-  //   userNotJoined(msg.sender)
-  //   isValidStakeLevel(_stakeLevel)
-  // {
-  //   deposit(msg.sender, ixtStakingLevels[uint256(_stakeLevel)], false);
-  //   Member storage member = members[msg.sender];
-  //   member.joinedTimestamp = block.timestamp;
-  //   emit Joined(msg.sender, member.membershipNumber);
-  // }
+  function join(StakeLevel _stakeLevel)
+    public
+    whenNotPaused()
+    userIsAuthorised(msg.sender)
+    userNotJoined(msg.sender)
+    isValidStakeLevel(_stakeLevel)
+  {
+    deposit(msg.sender, ixtStakingLevels[uint256(_stakeLevel)], false);
+    Member storage member = members[msg.sender];
+    member.joinedTimestamp = block.timestamp;
+    // Add invitation code...
+    emit Joined(msg.sender, member.membershipNumber);
+  }
 
   // function cancelMembership()
   //   public
@@ -477,32 +478,32 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   //   }
   // }
 
-  // function deposit(
-  //   address depositer,
-  //   uint256 amount,
-  //   bool isPoolDeposit
-  // ) 
-  //   internal
-  // {
-  //   /// @dev Explicitly checking allowance & balance before transferFrom
-  //   /// so we get the revert message.
-  //   require(amount > 0, "Cannot deposit 0 IXT.");
-  //   require(
-  //     ixtToken.allowance(depositer, address(this)) >= amount &&
-  //     ixtToken.balanceOf(depositer) >= amount &&
-  //     ixtToken.transferFrom(depositer, address(this), amount),
-  //     "Unable to deposit IXT - check allowance and balance."  
-  //   );
-  //   if (isPoolDeposit) {
-  //     totalPoolBalance = SafeMath.add(totalPoolBalance, amount);
+  function deposit(
+    address depositer,
+    uint256 amount,
+    bool isPoolDeposit
+  ) 
+    internal
+  {
+    /// @dev Explicitly checking allowance & balance before transferFrom
+    /// so we get the revert message.
+    require(amount > 0, "Cannot deposit 0 IXT.");
+    require(
+      ixtToken.allowance(depositer, address(this)) >= amount &&
+      ixtToken.balanceOf(depositer) >= amount &&
+      ixtToken.transferFrom(depositer, address(this), amount),
+      "Unable to deposit IXT - check allowance and balance."  
+    );
+    if (isPoolDeposit) {
+      totalPoolBalance = SafeMath.add(totalPoolBalance, amount);
 
-  //     emit PoolDeposit(depositer, amount);
-  //   } else {
-  //     Member storage member = members[depositer];
-  //     member.stakeBalance = SafeMath.add(member.stakeBalance, amount);
-  //     totalMemberBalance = SafeMath.add(totalMemberBalance, amount);
+      emit PoolDeposit(depositer, amount);
+    } else {
+      Member storage member = members[depositer];
+      member.stakeBalance = SafeMath.add(member.stakeBalance, amount);
+      totalMemberBalance = SafeMath.add(totalMemberBalance, amount);
 
-  //     emit Deposited(depositer, amount);
-  //   }
-  // }
+      emit Deposited(depositer, amount);
+    }
+  }
 }

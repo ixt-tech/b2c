@@ -1,24 +1,21 @@
-pragma solidity 0.5.0;
+pragma solidity 0.5.1;
 
 import "./lib/Ownable.sol";
 import "./lib/IERC20.sol";
 import "./lib/SafeMath.sol";
 import "./lib/Pausable.sol";
+import "./lib/ValidatorRole.sol";
 
-contract IxtProtect is Ownable, Pausable {
-
-  /*      Events      */
+contract IxtEvents {
 
   event Authorised(
     address memberAddress,
-    uint256 membershipNumber,
-    Products[] productsCovered
+    uint256 membershipNumber
   );
 
   event Joined(
     address memberAddress,
-    uint256 membershipNumber,
-    Products[] productsCovered
+    uint256 membershipNumber
   );
 
   event Deposited(
@@ -55,15 +52,91 @@ contract IxtProtect is Ownable, Pausable {
     address drainInitiator
   );
 
+}
+
+contract RoleManager is Ownable, Pausable, ValidatorRole {
+
+  constructor(address validator)
+    public
+    ValidatorRole(validator)
+  {}
+}
+
+contract StakeManager {
+
   /*      Function modifiers      */
 
-  modifier onlyValidator() {
+  modifier isValidStakeLevel(StakeLevel level) {
     require(
-      msg.sender == validator,
-      "This function can only be called by the validator."
+      uint8(level) >= 0 && uint8(level) <= 2,
+      "Is not valid a staking level."
     );
     _;
   }
+
+  /*      Data types      */
+
+  enum StakeLevel { LOW, MEDIUM, HIGH }
+
+  /*      Variable declarations      */
+
+  /// @dev the defined staking amount for each level
+  uint256[3] public ixtStakingLevels;
+
+  /*      Constructor      */
+
+  constructor(
+    uint256[3] memory _ixtStakingLevels
+  ) public {
+    ixtStakingLevels = _ixtStakingLevels;
+  }
+
+}
+
+contract RewardManager {
+
+  /*      Data types      */
+
+  struct LoyaltyReward {
+    uint256 changeTimestamp;
+    uint256 loyaltyRewardPercentage;
+  }
+
+  /*      Variable declarations      */
+
+  /// @dev the reward received when inviting someone
+  uint256 public invitationReward;
+  /// @dev the period after which a member gets a loyalty reward
+  uint256 public loyaltyPeriod;
+  /// @dev contains all times the loyalty reward amount was changed
+  LoyaltyReward[] public loyaltyRewardChanges;
+
+  /*      Constructor      */
+
+  constructor(
+    uint256 _invitationReward,
+    uint256 _loyaltyRewardPercentage,
+    uint256 _loyaltyPeriod
+  ) public {
+    require(
+      _loyaltyRewardPercentage >= 0 &&
+      _loyaltyRewardPercentage <= 100,
+      "Loyalty reward percentage must be between 0 and 100."
+    );
+    invitationReward = _invitationReward;
+    loyaltyPeriod = _loyaltyPeriod;
+    LoyaltyReward memory loyaltyReward = LoyaltyReward({
+      changeTimestamp: block.timestamp,
+      loyaltyRewardPercentage: _loyaltyRewardPercentage
+    });
+    loyaltyRewardChanges.push(loyaltyReward);
+  }
+
+}
+
+contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
+
+  /*      Function modifiers      */
 
   modifier userNotAuthorised(address memberAddress) {
     require(
@@ -102,28 +175,15 @@ contract IxtProtect is Ownable, Pausable {
   struct Member {
     uint256 authorisedTimestamp;
     uint256 joinedTimestamp;
+    uint256 timestampOfPreviousClaim;
     uint256 membershipNumber;
-    Products[] productsCovered;
     bytes32 invitationCode;
     uint256 stakeBalance;
-    uint256 rewardBalance;
+    uint256 invitationRewards;
   }
-
-  /// @dev compiles to smallest uintX possible (ie. uint8 if < 256 entries)
-  enum Products { PERSONAL_PROTECTION }
 
   /*      Variable declarations      */
 
-  /// @dev the minimum stake period in seconds
-  uint256 public minimumStakePeriodSeconds;
-  /// @dev the reward received when inviting someone
-  uint256 public invitationReward;
-  /// @dev the reward received for loyalty
-  uint256 public loyaltyReward;
-  /// @dev the reward received for not claiming
-  uint256 public noClaimReward; 
-  /// @dev the address of the approved KYC validator for IXLedger
-  address public validator;
   /// @dev the IXT ERC20 Token contract
   IERC20 public ixtToken;
   /// @dev a mapping from member wallet addresses to Member struct
@@ -134,85 +194,101 @@ contract IxtProtect is Ownable, Pausable {
   uint256 public totalMemberBalance;
   /// @dev the total pool balance
   uint256 public totalPoolBalance;
+  /// @notice a mapping from invitationCode => memberAddress, so invitation rewards can be applied.
+  mapping(bytes32 => address) public memberInvitationCodes;
+ 
 
   /*      Constants      */
-  uint256 public constant MINIMUM_STAKE = 2000 * (10**IXT_DECIMALS);
   uint256 public constant IXT_DECIMALS = 8;
 
   /*      Constructor      */
 
   constructor(
     address _validator,
+    uint256 _loyaltyPeriod,
     address _ixtToken,
-    uint256 minimumStakeDays,
     uint256 _invitationReward,
-    uint256 _loyaltyReward,
-    uint256 _noClaimReward
-  ) public {
-    require(_validator != address(0x0), "Validator address was set to 0.");
-    require(_ixtToken != address(0x0), "ixtToken address was set to 0.");
-    validator = _validator;
-    ixtToken = IERC20(_ixtToken);
-    minimumStakePeriodSeconds = minimumStakeDays * 24 * 60 * 60;
-    invitationReward = _invitationReward;
-    loyaltyReward = _loyaltyReward; 
-    noClaimReward = _noClaimReward;
-  }
-
-  /*      Public Functions      */
-
-  /// @notice Registers new user as a member after the KYC process
-  function authoriseUser(
-    uint256 membershipNumber,
-    address memberAddress,
-    Products[] memory productsCovered,
-    bytes32 invitationCode
-  ) 
+    uint256 _loyaltyRewardPercentage,
+    uint256[3] memory _ixtStakingLevels
+  )
     public
-    onlyValidator
-    userNotAuthorised(memberAddress)
-    userNotJoined(memberAddress)
+    RoleManager(_validator)
+    StakeManager(_ixtStakingLevels)
+    RewardManager(_invitationReward, _loyaltyRewardPercentage, _loyaltyPeriod)
   {
-    require(
-      memberAddress != address(0x0),
-      "Member address was set to 0."
-    );
-    Member memory member = Member(
-      block.timestamp,
-      0,
-      membershipNumber,
-      productsCovered,
-      invitationCode,
-      0,
-      0
-    );
-    members[memberAddress] = member;
-    membersArray.push(memberAddress);
-    emit Authorised(memberAddress, membershipNumber, productsCovered);
+    require(_ixtToken != address(0x0), "ixtToken address was set to 0.");
+    ixtToken = IERC20(_ixtToken);
   }
+
+  /*                            */
+  /*      PUBLIC FUNCTIONS      */
+  /*                            */
+
+  /*      (member control)      */
+
+
+  // /// @notice Registers new user as a member after the KYC process
+  // function authoriseUser(
+  //   uint256 _membershipNumber,
+  //   address _memberAddress,
+  //   bytes32 _invitationCode
+  // ) 
+  //   public
+  //   onlyValidator
+  //   userNotAuthorised(_memberAddress)
+  //   userNotJoined(_memberAddress)
+  // {
+  //   require(
+  //     _memberAddress != address(0x0),
+  //     "Member address was set to 0."
+  //   );
+  //   Member memory member = Member({
+  //     authorisedTimestamp: block.timestamp,
+  //     joinedTimestamp: 0,
+  //     timestampOfPreviousClaim: 0,
+  //     membershipNumber: _membershipNumber,
+  //     invitationCode: _invitationCode,
+  //     stakeBalance: 0,
+  //     invitationRewards: 0
+  //   });
+  //   members[_memberAddress] = member;
+  //   membersArray.push(_memberAddress);
+  //   emit Authorised(_memberAddress, _membershipNumber);
+  // }
 
   /// @notice Called by a member once they have been approved to join the scheme
-  function join()
-    public
-    whenNotPaused()
-    userIsAuthorised(msg.sender)
-    userNotJoined(msg.sender)
-  {
-    deposit(msg.sender, MINIMUM_STAKE, false);
-    Member storage member = members[msg.sender];
-    member.joinedTimestamp = block.timestamp;
-    emit Joined(msg.sender, member.membershipNumber, member.productsCovered);
-  }
+  // function join(StakeLevel _stakeLevel)
+  //   public
+  //   whenNotPaused()
+  //   userIsAuthorised(msg.sender)
+  //   userNotJoined(msg.sender)
+  //   isValidStakeLevel(_stakeLevel)
+  // {
+  //   deposit(msg.sender, ixtStakingLevels[uint256(_stakeLevel)], false);
+  //   Member storage member = members[msg.sender];
+  //   member.joinedTimestamp = block.timestamp;
+  //   emit Joined(msg.sender, member.membershipNumber);
+  // }
 
-  /// @notice Allows member to deposit funds to increase their stake
-  function deposit(uint256 amount)
-    public
-    whenNotPaused()
-    userIsJoined(msg.sender)
-  {
-    deposit(msg.sender, amount, false);
-  }
+  // function cancelMembership()
+  //   public
+  //   whenNotPaused()
+  //   userIsJoined(msg.sender)
+  // {
+  //   cancelMembershipInternal(msg.sender);
+  // }
 
+
+  // /// @notice Allows member to deposit funds to increase their stake
+  // function deposit(uint256 amount)
+  //   public
+  //   whenNotPaused()
+  //   userIsJoined(msg.sender)
+  // {
+  //   deposit(msg.sender, amount, false);
+  // }
+
+/*
   function withdraw(uint256 amount)
     public
     whenNotPaused()
@@ -224,7 +300,6 @@ contract IxtProtect is Ownable, Pausable {
       elapsedTime >= minimumStakePeriodSeconds,
       "Minimum stake period is not complete."
     );
-
     bool sufficientBalance = (member.stakeBalance + member.rewardBalance) > amount;
     require(
       sufficientBalance &&
@@ -257,191 +332,175 @@ contract IxtProtect is Ownable, Pausable {
 
     emit Withdrawn(msg.sender, amount);
   }
+*/
 
-  function getAccountBalance(address memberAddress)
-    public
-    view
-    userIsJoined(memberAddress)
-    returns (uint256)
-  {
-    return SafeMath.add(members[memberAddress].stakeBalance, members[memberAddress].rewardBalance);
-  }
+  /*      (admin functions)      */
 
-  function getStakeBalance(address memberAddress)
-    public
-    view
-    userIsJoined(memberAddress)
-    returns (uint256)
-  {
-    return members[memberAddress].stakeBalance;
-  }
+  // function depositPool(uint256 amountToDeposit)
+  //   public
+  //   onlyOwner
+  // {
+  //   deposit(msg.sender, amountToDeposit, true);
+  // }
 
-  function getRewardBalance(address memberAddress)
-    public
-    view
-    userIsJoined(memberAddress)
-    returns (uint256)
-  {
-    return members[memberAddress].rewardBalance;
-  }
+  // function withdrawPool(uint256 amountToWithdraw)
+  //   public
+  //   onlyOwner
+  // {
+  //   if (amountToWithdraw > 0) {
+  //     require(
+  //       totalPoolBalance >= amountToWithdraw &&
+  //       ixtToken.transfer(msg.sender, amountToWithdraw),
+  //       "Unable to withdraw this value of IXT."  
+  //     );
+  //     totalPoolBalance = SafeMath.sub(totalPoolBalance, amountToWithdraw);
+  //   }
+  // }
 
-  function depositPool(uint256 amountToDeposit)
-    public
-    onlyOwner
-  {
-    deposit(msg.sender, amountToDeposit, true);
-  }
+  // /// @dev Can be called if user is authorised or joined
+  // function removeMember(address userAddress)
+  //   public
+  //   userIsAuthorised(userAddress)
+  //   onlyOwner
+  // {
+  //   cancelMembershipInternal(userAddress);
+  // }
 
-  function withdrawPool(uint256 amountToWithdraw)
-    public
-    onlyOwner
-  {
-    if (amountToWithdraw > 0) {
-      require(
-        totalPoolBalance >= amountToWithdraw &&
-        ixtToken.transfer(msg.sender, amountToWithdraw),
-        "Unable to withdraw this value of IXT."  
-      );
-      totalPoolBalance = SafeMath.sub(totalPoolBalance, amountToWithdraw);
-    }
-  }
+  // function drain() public onlyOwner {
+  //   /// @dev Refund and delete all members
+  //   for (uint256 index = 0; index < membersArray.length; index++) {
+  //     address memberAddress = membersArray[index];
+  //     uint256 amountRefunded = refundUserBalance(memberAddress);
+  //     delete members[memberAddress];
 
-  /// @dev Can be called if user is authorised or joined
-  function removeMember(address userAddress)
-    public
-    userIsAuthorised(userAddress)
-    onlyOwner
-  {
-    cancelMembership(userAddress);
-  }
+  //     emit MemberRefunded(memberAddress, amountRefunded);
+  //   }
+  //   delete membersArray;
 
-  function drain() public onlyOwner {
-    /// @dev Refund and delete all members
-    for (uint256 index = 0; index < membersArray.length; index++) {
-      address memberAddress = membersArray[index];
-      uint256 amountRefunded = refundUserBalance(memberAddress);
-      delete members[memberAddress];
-
-      emit MemberRefunded(memberAddress, amountRefunded);
-    }
-    delete membersArray;
-
-    /// @dev Refund the pool balance
-    require(
-      ixtToken.transfer(msg.sender, totalPoolBalance),
-      "Unable to withdraw this value of IXT."
-    );
-    emit PoolBalanceRefunded(msg.sender, totalPoolBalance);
-    totalPoolBalance = 0;
+  //   /// @dev Refund the pool balance
+  //   require(
+  //     ixtToken.transfer(msg.sender, totalPoolBalance),
+  //     "Unable to withdraw this value of IXT."
+  //   );
+  //   emit PoolBalanceRefunded(msg.sender, totalPoolBalance);
+  //   totalPoolBalance = 0;
     
-    emit ContractDrained(msg.sender);
-  }
+  //   emit ContractDrained(msg.sender);
+  // }
 
-  function setInvitationReward(uint256 _invitationReward)
-    public
-    onlyOwner
-  {
-    invitationReward = _invitationReward;
-  }
+  // /*      (getter functions)      */
 
-  function setLoyaltyReward(uint256 _loyaltyReward)
-    public
-    onlyOwner
-  {
-    loyaltyReward = _loyaltyReward;
-  }
+  // function getAccountBalance(address memberAddress)
+  //   public
+  //   view
+  //   userIsJoined(memberAddress)
+  //   returns (uint256)
+  // {
+  //   return SafeMath.add(
+  //     getStakeBalance(memberAddress),
+  //     getRewardBalance(memberAddress)
+  //   );
+  // }
 
-  function setNoClaimReward(uint256 _noClaimReward)
-    public
-    onlyOwner
-  {
-    noClaimReward = _noClaimReward; 
-  }
+  // function getStakeBalance(address memberAddress)
+  //   public
+  //   view
+  //   userIsJoined(memberAddress)
+  //   returns (uint256)
+  // {
+  //   return members[memberAddress].stakeBalance;
+  // }
 
-  function setMinimumStakeDays(uint256 minimumStakeDays)
-    public
-    onlyOwner
-  {
-    minimumStakePeriodSeconds = minimumStakeDays * 24 * 60 * 60;
-  }
+  // function getRewardBalance(address memberAddress)
+  //   public
+  //   view
+  //   userIsJoined(memberAddress)
+  //   returns (uint256)
+  // {
+  //   /// @dev TODO - Change this to calculate the correct withdraw amount
+  //   return members[memberAddress].invitationRewards;
+  // }
 
-  function getMinimumStakeDays()
-    public
-    view
-    returns (uint256)
-  {
-    return minimumStakePeriodSeconds / 60 / 60 / 24;
-  }
+  // /*      (setter functions)      */
 
-  /*      Internal Functions      */
+  // function setInvitationReward(uint256 _invitationReward)
+  //   public
+  //   onlyOwner
+  // {
+  //   invitationReward = _invitationReward;
+  // }
 
-  function cancelMembership(address memberAddress) internal {
-    uint256 amountRefunded = refundUserBalance(memberAddress);
+  // /*                              */
+  // /*      INTERNAL FUNCTIONS      */
+  // /*                              */
 
-    delete members[memberAddress];
+  // function cancelMembershipInternal(address memberAddress) internal {
+  //   uint256 amountRefunded = refundUserBalance(memberAddress);
 
-    removeMemberFromArray(memberAddress);
+  //   delete members[memberAddress];
 
-    emit MemberCancelled(memberAddress, amountRefunded);
-  }
+  //   removeMemberFromArray(memberAddress);
 
-  function refundUserBalance(
-    address memberAddress
-  ) 
-    internal
-    returns (uint256 amountRefunded)
-  {
-    Member storage member = members[memberAddress];
+  //   emit MemberCancelled(memberAddress, amountRefunded);
+  // }
 
-    uint256 amountToRefund = SafeMath.add(member.rewardBalance, member.stakeBalance);
-    bool userJoined = member.joinedTimestamp != 0;
-    if (amountToRefund > 0 && userJoined) {
-      require(
-        ixtToken.transfer(memberAddress, amountToRefund),
-        "Unable to withdraw this value of IXT."  
-      );
-      totalMemberBalance = SafeMath.sub(totalMemberBalance, amountToRefund);
-    }
-    return amountToRefund;
-  }
+  // function refundUserBalance(
+  //   address memberAddress
+  // ) 
+  //   internal
+  //   returns (uint256 amountRefunded)
+  // {
+  //   Member storage member = members[memberAddress];
 
-  function removeMemberFromArray(address memberAddress) internal {
-    /// @dev removing the member address from the membersArray
-    for (uint256 index; index < membersArray.length; index++) {
-      if (membersArray[index] == memberAddress) {
-        membersArray[index] = membersArray[membersArray.length - 1];
-        membersArray.length -= 1;
-        break;
-      }
-    }
-  }
+  //   uint256 amountToRefund = getAccountBalance(memberAddress);
+  //   bool userJoined = member.joinedTimestamp != 0;
+  //   if (amountToRefund > 0 && userJoined) {
+  //     require(
+  //       ixtToken.transfer(memberAddress, amountToRefund),
+  //       "Unable to withdraw this value of IXT."  
+  //     );
+  //     totalMemberBalance = SafeMath.sub(totalMemberBalance, amountToRefund);
+  //   }
+  //   return amountToRefund;
+  // }
 
-  function deposit(
-    address depositer,
-    uint256 amount,
-    bool isPoolDeposit
-  ) 
-    internal
-  {
-    /// @dev Explicitly checking allowance & balance before transferFrom
-    /// so we get the revert message.
-    require(amount > 0, "Cannot deposit 0 IXT.");
-    require(
-      ixtToken.allowance(depositer, address(this)) >= amount &&
-      ixtToken.balanceOf(depositer) >= amount &&
-      ixtToken.transferFrom(depositer, address(this), amount),
-      "Unable to deposit IXT - check allowance and balance."  
-    );
-    if (isPoolDeposit) {
-      totalPoolBalance = SafeMath.add(totalPoolBalance, amount);
+  // function removeMemberFromArray(address memberAddress) internal {
+  //   /// @dev removing the member address from the membersArray
+  //   for (uint256 index; index < membersArray.length; index++) {
+  //     if (membersArray[index] == memberAddress) {
+  //       membersArray[index] = membersArray[membersArray.length - 1];
+  //       membersArray.length -= 1;
+  //       break;
+  //     }
+  //   }
+  // }
 
-      emit PoolDeposit(depositer, amount);
-    } else {
-      Member storage member = members[depositer];
-      member.stakeBalance = SafeMath.add(member.stakeBalance, amount);
-      totalMemberBalance = SafeMath.add(totalMemberBalance, amount);
+  // function deposit(
+  //   address depositer,
+  //   uint256 amount,
+  //   bool isPoolDeposit
+  // ) 
+  //   internal
+  // {
+  //   /// @dev Explicitly checking allowance & balance before transferFrom
+  //   /// so we get the revert message.
+  //   require(amount > 0, "Cannot deposit 0 IXT.");
+  //   require(
+  //     ixtToken.allowance(depositer, address(this)) >= amount &&
+  //     ixtToken.balanceOf(depositer) >= amount &&
+  //     ixtToken.transferFrom(depositer, address(this), amount),
+  //     "Unable to deposit IXT - check allowance and balance."  
+  //   );
+  //   if (isPoolDeposit) {
+  //     totalPoolBalance = SafeMath.add(totalPoolBalance, amount);
 
-      emit Deposited(depositer, amount);
-    }
-  }
+  //     emit PoolDeposit(depositer, amount);
+  //   } else {
+  //     Member storage member = members[depositer];
+  //     member.stakeBalance = SafeMath.add(member.stakeBalance, amount);
+  //     totalMemberBalance = SafeMath.add(totalMemberBalance, amount);
+
+  //     emit Deposited(depositer, amount);
+  //   }
+  // }
 }

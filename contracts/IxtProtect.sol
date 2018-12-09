@@ -394,38 +394,38 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   //   emit ContractDrained(msg.sender);
   // }
 
-  // /*      (getter functions)      */
+  /*      (getter functions)      */
 
-  // function getAccountBalance(address memberAddress)
-  //   public
-  //   view
-  //   userIsJoined(memberAddress)
-  //   returns (uint256)
-  // {
-  //   return SafeMath.add(
-  //     getStakeBalance(memberAddress),
-  //     getRewardBalance(memberAddress)
-  //   );
-  // }
+  function getAccountBalance(address memberAddress)
+    public
+    view
+    userIsJoined(memberAddress)
+    returns (uint256)
+  {
+    return SafeMath.add(
+      getStakeBalance(memberAddress),
+      getRewardBalance(memberAddress)
+    );
+  }
 
-  // function getStakeBalance(address memberAddress)
-  //   public
-  //   view
-  //   userIsJoined(memberAddress)
-  //   returns (uint256)
-  // {
-  //   return members[memberAddress].stakeBalance;
-  // }
+  function getStakeBalance(address memberAddress)
+    public
+    view
+    userIsJoined(memberAddress)
+    returns (uint256)
+  {
+    return members[memberAddress].stakeBalance;
+  }
 
-  // function getRewardBalance(address memberAddress)
-  //   public
-  //   view
-  //   userIsJoined(memberAddress)
-  //   returns (uint256)
-  // {
-  //   /// @dev TODO - Change this to calculate the correct withdraw amount
-  //   return members[memberAddress].invitationRewards;
-  // }
+  function getRewardBalance(address memberAddress)
+    public
+    view
+    userIsJoined(memberAddress)
+    returns (uint256)
+  {
+    /// @dev TODO - Change this to calculate the correct withdraw amount
+    return members[memberAddress].invitationRewards;
+  }
 
   // /*      (setter functions)      */
 

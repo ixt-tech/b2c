@@ -197,6 +197,7 @@ contract("IXTProtect", (accounts) => {
     it("loyaltyReward should be correct.", async () => {
       const loyaltyRewardChanges =  await ixtProtect.loyaltyRewardChanges(0);
       assert.equal(loyaltyRewardChanges.loyaltyRewardPercentage.toString(), defaultLoyaltyPercentage);
+      await expectThrow(ixtProtect.loyaltyRewardChanges(1));
     });
 
     it("loyaltyPeriod should be correct.", async () => {
@@ -826,17 +827,19 @@ function initialSetup() {
   }
 }
 
-async function shouldFailWithMessage (promise, failType, message = "") {
+async function shouldFailWithMessage(promise, failType, message = "") {
   try {
     await promise;
   } catch (error) {
     assert.include(error.message, failType, `Wrong failure type, expected '${failType}'`);
     switch (failType) {
     case "revert":
-      assert.equal(error.reason, message);
+      if (message !== "") assert.equal(error.reason, message);
       break;
-    case "invalidOpcode":
-      assert.include(error.message, message, `Wrong failure type, expected '${message}'`);
+    case "invalid opcode":
+      if (message !== "") {
+        assert.include(error.message, message, `Wrong failure type, expected '${message}'`);
+      }
       break;
     default:
       assert.fail(`Failure type '${failType}' not recognised.`);
@@ -849,14 +852,14 @@ async function shouldFailWithMessage (promise, failType, message = "") {
   assert.fail(`Expected failure '${failureString}' failure not received`);
 }
 
-async function expectRevert (promise, message = "") {
+async function expectRevert(promise, message = "") {
   await shouldFailWithMessage(promise, "revert", message);
 }
 
-async function expectThrow (promise, message = "") {
+async function expectThrow(promise, message = "") {
   await shouldFailWithMessage(promise, "invalid opcode", message);
 }
 
-async function expectOutOfGas (promise, message = "") {
+async function expectOutOfGas(promise, message = "") {
   await shouldFailWithMessage(promise, "out of gas", message);
 }

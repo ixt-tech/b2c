@@ -284,32 +284,59 @@ contract("IXTProtect", (accounts) => {
   }); 
 
   describe("Join function", () => {
+    let code = otherMemberData.invitationCode;
+    it("should not allow a non-valid staking level.", async () => {
+      await prepContracts(memberData, TokenAmounts.stakingLevels[LOW], TokenAmounts.stakingLevels[LOW], true);
+      await expectThrow(ixtProtect.join(LOW - 1, code, { from: memberData.memberAddress }));
+      await expectThrow(ixtProtect.join(HIGH + 1, code, { from: memberData.memberAddress }));
+      await expectThrow(ixtProtect.join(999, code, { from: memberData.memberAddress }));
+    });
     describe("when the allowance has been set to a correct level.", () => {
       describe("and the validator has authorised the user.", () => {
         it("should allow join to be called if the allowance is equal to or above the minimum stake.", async () => {
           await prepContracts(memberData, TokenAmounts.stakingLevels[LOW], TokenAmounts.stakingLevels[LOW], true);
-          let blockTimestamp = await ixtProtect.join(LOW, { from: memberData.memberAddress }).then((tx) => getBlockTimestamp(tx));
+          let blockTimestamp = await ixtProtect.join(LOW, code, { from: memberData.memberAddress }).then((tx) => getBlockTimestamp(tx));
           let newMember = await ixtProtect.members(memberData.memberAddress);
           assert.equal(newMember.joinedTimestamp, blockTimestamp);
           assert.equal(newMember.stakeBalance, TokenAmounts.stakingLevels[LOW]);
 
           await prepContracts(memberData, TokenAmounts.stakingLevels[MEDIUM], TokenAmounts.stakingLevels[MEDIUM], true);
-          blockTimestamp = await ixtProtect.join(LOW, { from: memberData.memberAddress }).then((tx) => getBlockTimestamp(tx));
+          blockTimestamp = await ixtProtect.join(LOW, code, { from: memberData.memberAddress }).then((tx) => getBlockTimestamp(tx));
           newMember = await ixtProtect.members(memberData.memberAddress);
           assert.equal(newMember.joinedTimestamp, blockTimestamp);
           assert.equal(newMember.stakeBalance, TokenAmounts.stakingLevels[LOW]);
 
           await prepContracts(memberData, TokenAmounts.stakingLevels[MEDIUM], TokenAmounts.stakingLevels[MEDIUM], true);
-          blockTimestamp = await ixtProtect.join(MEDIUM, { from: memberData.memberAddress }).then((tx) => getBlockTimestamp(tx));
+          blockTimestamp = await ixtProtect.join(MEDIUM, code, { from: memberData.memberAddress }).then((tx) => getBlockTimestamp(tx));
           newMember = await ixtProtect.members(memberData.memberAddress);
           assert.equal(newMember.joinedTimestamp, blockTimestamp);
           assert.equal(newMember.stakeBalance, TokenAmounts.stakingLevels[MEDIUM]);
 
           await prepContracts(memberData, TokenAmounts.stakingLevels[HIGH], TokenAmounts.stakingLevels[HIGH], true);
-          blockTimestamp = await ixtProtect.join(HIGH, { from: memberData.memberAddress }).then((tx) => getBlockTimestamp(tx));
+          blockTimestamp = await ixtProtect.join(HIGH, code, { from: memberData.memberAddress }).then((tx) => getBlockTimestamp(tx));
           newMember = await ixtProtect.members(memberData.memberAddress);
           assert.equal(newMember.joinedTimestamp, blockTimestamp);
           assert.equal(newMember.stakeBalance, TokenAmounts.stakingLevels[HIGH]);
+        });
+        it("should add the members personal invitation code to the mapping.", async () => {
+          await prepContracts(memberData, TokenAmounts.stakingLevels[HIGH], TokenAmounts.stakingLevels[HIGH], true);
+          await ixtProtect.join(HIGH, code, { from: memberData.memberAddress });
+          const addr = await ixtProtect.registeredInvitationCodes(memberData.invitationCode);
+          assert.equal(addr, memberData.memberAddress);
+        });
+        it("should apply the reward to the invitationCodeToClaim's corresponding member address.", async () => {
+          await prepContracts(memberData, TokenAmounts.stakingLevels[HIGH], TokenAmounts.stakingLevels[HIGH], true);
+          await giveUserBalanceOfTokens(otherMemberData.memberAddress, TokenAmounts.stakingLevels[LOW]);
+          await setUserTokenApproval(otherMemberData.memberAddress, ixtProtect.address, TokenAmounts.stakingLevels[LOW]);
+          await authoriseUser(ixtProtect, otherMemberData, validator);
+          await ixtProtect.join(LOW, zeroedBytes32, { from: otherMemberData.memberAddress });
+          const beforeInvitationRewards = await ixtProtect.members(otherMemberData.memberAddress).then(m => m.invitationRewards);
+          await ixtProtect.join(HIGH, otherMemberData.invitationCode, { from: memberData.memberAddress });
+          const afterInvitationRewards = await ixtProtect.members(otherMemberData.memberAddress).then(m => m.invitationRewards);
+          const shouldBeZero = await ixtProtect.members(memberData.memberAddress).then(m => m.invitationRewards);
+          assert.equal(beforeInvitationRewards, "0");
+          assert.equal(afterInvitationRewards, TokenAmounts.defaultInvitationReward);
+          assert.equal(shouldBeZero, "0");
         });
         describe("but the balance is not sufficient.", () => {
           it("should not allow join to be called.", async () => {
@@ -317,7 +344,7 @@ contract("IXTProtect", (accounts) => {
             // Reduce the user balance so an unsufficient amount is available
             await token.transfer(randomAddress, "200", { from: memberData.memberAddress });
             await expectRevert(
-              ixtProtect.join(LOW, { from: memberData.memberAddress }),
+              ixtProtect.join(LOW, code, { from: memberData.memberAddress }),
               ErrorReasons.cannotDeposit
             );
           });
@@ -327,7 +354,7 @@ contract("IXTProtect", (accounts) => {
         it("should not allow join to be called.", async () => {
           await prepContracts(memberData, TokenAmounts.stakingLevels[LOW], TokenAmounts.stakingLevels[LOW], false);
           await expectRevert(
-            ixtProtect.join(LOW, { from: memberData.memberAddress }),
+            ixtProtect.join(LOW, code, { from: memberData.memberAddress }),
             ErrorReasons.userIsAuthorised
           );
         });
@@ -340,14 +367,14 @@ contract("IXTProtect", (accounts) => {
         });
         it("should not allow join to be called (no allowance set).", async () => {
           await expectRevert(
-            ixtProtect.join(LOW, { from: memberData.memberAddress }),
+            ixtProtect.join(LOW, code, { from: memberData.memberAddress }),
             ErrorReasons.cannotDeposit
           );
         });
         it("should not allow join to be called (allowance set, but lower than minimum stake).", async () => {
           await token.approve(ixtProtect.address, TokenAmounts.lessThanMinimumStake);
           await expectRevert(
-            ixtProtect.join(LOW, { from: memberData.memberAddress }),
+            ixtProtect.join(LOW, code, { from: memberData.memberAddress }),
             ErrorReasons.cannotDeposit
           );
         });
@@ -356,7 +383,7 @@ contract("IXTProtect", (accounts) => {
         it("should not allow join to be called.", async () => {
           await prepContracts(memberData, TokenAmounts.stakingLevels[LOW], TokenAmounts.stakingLevels[LOW], false);
           await expectRevert(
-            ixtProtect.join(LOW, { from: memberData.memberAddress }),
+            ixtProtect.join(LOW, code, { from: memberData.memberAddress }),
             ErrorReasons.userIsAuthorised
           );
         });

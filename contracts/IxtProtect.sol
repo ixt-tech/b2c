@@ -195,7 +195,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   /// @dev the total pool balance
   uint256 public totalPoolBalance;
   /// @notice a mapping from invitationCode => memberAddress, so invitation rewards can be applied.
-  mapping(bytes32 => address) public memberInvitationCodes;
+  mapping(bytes32 => address) public registeredInvitationCodes;
  
 
   /*      Constants      */
@@ -259,7 +259,10 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   }
 
   /// @notice Called by a member once they have been approved to join the scheme
-  function join(StakeLevel _stakeLevel)
+  function join(
+    StakeLevel _stakeLevel,
+    bytes32 invitationCodeToClaim
+  )
     public
     whenNotPaused()
     userIsAuthorised(msg.sender)
@@ -269,7 +272,17 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     deposit(msg.sender, ixtStakingLevels[uint256(_stakeLevel)], false);
     Member storage member = members[msg.sender];
     member.joinedTimestamp = block.timestamp;
-    // Add invitation code...
+    /// @dev add this members invitation code to the mapping
+    registeredInvitationCodes[member.invitationCode] = msg.sender;
+    /// @dev if the invitationCodeToClaim is already registered, add on reward
+    address rewardMemberAddress = registeredInvitationCodes[invitationCodeToClaim];
+    if (
+      rewardMemberAddress != address(0x0) &&
+      members[rewardMemberAddress].joinedTimestamp != 0
+    ) {
+      Member storage rewardee = members[rewardMemberAddress];
+      rewardee.invitationRewards = SafeMath.add(rewardee.invitationRewards, invitationReward);
+    }
     emit Joined(msg.sender, member.membershipNumber);
   }
 

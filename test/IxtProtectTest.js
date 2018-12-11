@@ -547,10 +547,10 @@ contract("IXTProtect", (accounts) => {
       await ixtProtect.join(HIGH, zeroedBytes32, { from: memberData[0].memberAddress } );
     });
     it("should not allow claims there is no balance to claim.", async () => {
-      expectRevert(
-        ixtProtect.claimRewards({from: memberData[0].memberAddress}),
-        ErrorReasons.noRewardsToClaim
-      );
+      const before = await token.balanceOf(memberData[0].memberAddress);
+      await ixtProtect.claimRewards({from: memberData[0].memberAddress});
+      const after = await token.balanceOf(memberData[0].memberAddress);
+      assert.equal(before.toString(), after.toString());
     });
     it("should not allow claims when the pool balance is too low.", async () => {
       await passTimeinDays("100"); // 1 Period passed since join (100 days total)

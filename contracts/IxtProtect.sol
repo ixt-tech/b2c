@@ -126,7 +126,7 @@ contract RewardManager {
 // contract IxtProtectInterface {
 //   /*      (member functions)      */
 //   [x] function join(uint8 _stakeLevel, bytes32 invitationCodeToClaim) public;
-//   [ ] function cancelMembership() public;
+//   [T] function cancelMembership() public;
 //   [T] function claimRewards() public;
 //   [x] function getMembersArrayLength() public view returns (uint256);
 //   [x] function getAccountBalance(address memberAddress) public view returns (uint256);
@@ -141,7 +141,7 @@ contract RewardManager {
 //   [T] function removeMember(address userAddress) public;
 //   [x] function setInvitationReward(uint256 _invitationReward) public
 //   [x] function setLoyaltyRewardPercentage(uint256 loyaltyRewardPercentage) public;
-//   [ ] function drain() public;
+//   [T] function drain() public;
 // }
 
 contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
@@ -281,7 +281,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     userNotJoined(msg.sender)
     isValidStakeLevel(_stakeLevel)
   {
-    deposit(msg.sender, ixtStakingLevels[uint256(_stakeLevel)], false);
+    depositInternal(msg.sender, ixtStakingLevels[uint256(_stakeLevel)], false);
     Member storage member = members[msg.sender];
     member.joinedTimestamp = block.timestamp;
     member.startOfLoyaltyRewardEligibility = block.timestamp;
@@ -304,7 +304,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     whenNotPaused()
     userIsJoined(msg.sender)
   {
-    // cancelMembershipInternal(msg.sender);
+    cancelMembershipInternal(msg.sender);
   }
 
   function claimRewards()
@@ -312,33 +312,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     whenNotPaused()
     userIsJoined(msg.sender)
   {
-    uint256 rewardAmount = getRewardBalance(msg.sender);
-
-    require(
-      rewardAmount > 0,
-      "You have no rewards to claim."
-    );
-    require(
-      totalPoolBalance >= rewardAmount,
-      "Pool balance not sufficient to withdraw rewards."
-    );
-    require(
-      ixtToken.transfer(msg.sender, rewardAmount),
-      "Unable to withdraw this value of IXT."  
-    );
-    /// @dev we know this is safe as totalPoolBalance >= rewardAmount
-    totalPoolBalance -= rewardAmount;
-
-    Member storage thisMember = members[msg.sender];
-    thisMember.previouslyAppliedLoyaltyBalance = 0;
-    thisMember.invitationRewards = 0;
-
-    uint256 loyaltyPeriodSeconds = loyaltyPeriodDays * 1 days;
-    uint256 elapsedTimeSinceEligible = block.timestamp - thisMember.startOfLoyaltyRewardEligibility;
-    if (elapsedTimeSinceEligible >= loyaltyPeriodSeconds) {
-      uint256 numWholePeriods = SafeMath.div(elapsedTimeSinceEligible, loyaltyPeriodSeconds);
-      thisMember.startOfLoyaltyRewardEligibility += numWholePeriods * loyaltyPeriodSeconds;
-    }
+    claimRewardsInternal(msg.sender);
   }
 
   /*      (admin functions)      */
@@ -347,7 +321,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     public
     onlyOwner
   {
-    deposit(msg.sender, amountToDeposit, true);
+    depositInternal(msg.sender, amountToDeposit, true);
   }
 
   function withdrawPool(uint256 amountToWithdraw)
@@ -375,24 +349,27 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
 
   function drain() public onlyOwner {
     /// @dev Refund and delete all members
-    // for (uint256 index = 0; index < membersArray.length; index++) {
-    //   address memberAddress = membersArray[index];
-    //   uint256 amountRefunded = refundUserBalance(memberAddress);
-    //   delete members[memberAddress];
+    for (uint256 index = 0; index < membersArray.length; index++) {
+      address memberAddress = membersArray[index];
+      uint256 amountRefunded = refundUserBalance(memberAddress);
 
-    //   emit MemberRefunded(memberAddress, amountRefunded);
-    // }
-    // delete membersArray;
+      delete registeredInvitationCodes[members[memberAddress].invitationCode];
+      delete members[memberAddress];
+      removeMemberFromArray(memberAddress);
 
-    // /// @dev Refund the pool balance
-    // require(
-    //   ixtToken.transfer(msg.sender, totalPoolBalance),
-    //   "Unable to withdraw this value of IXT."
-    // );
-    // emit PoolBalanceRefunded(msg.sender, totalPoolBalance);
-    // totalPoolBalance = 0;
+      emit MemberRefunded(memberAddress, amountRefunded);
+    }
+    delete membersArray;
+
+    /// @dev Refund the pool balance
+    require(
+      ixtToken.transfer(msg.sender, totalPoolBalance),
+      "Unable to withdraw this value of IXT."
+    );
+    emit PoolBalanceRefunded(msg.sender, totalPoolBalance);
+    totalPoolBalance = 0;
     
-    // emit ContractDrained(msg.sender);
+    emit ContractDrained(msg.sender);
   }
 
   /*      (getter functions)      */
@@ -509,21 +486,23 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     address memberAddress
   ) 
     internal
-    returns (uint256 amountRefunded)
+    returns (uint256)
   {
     Member storage member = members[memberAddress];
 
-    uint256 amountToRefund = getAccountBalance(memberAddress);
+    /// @dev Pool balance will be reduced inside this function
+    uint256 claimsRefunded = claimRewardsInternal(memberAddress);
+    uint256 stakeToRefund = member.stakeBalance;
+
     bool userJoined = member.joinedTimestamp != 0;
-    if (amountToRefund > 0 && userJoined) {
+    if (stakeToRefund > 0 && userJoined) {
       require(
-        ixtToken.transfer(memberAddress, amountToRefund),
+        ixtToken.transfer(memberAddress, stakeToRefund),
         "Unable to withdraw this value of IXT."  
       );
-      // TODO - make sure that the pool balance is also reduced!!!
-      totalMemberBalance = SafeMath.sub(totalMemberBalance, amountToRefund);
+      totalMemberBalance = SafeMath.sub(totalMemberBalance, stakeToRefund);
     }
-    return amountToRefund;
+    return claimsRefunded + stakeToRefund;
   }
 
   function removeMemberFromArray(address memberAddress) internal {
@@ -537,7 +516,40 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     }
   }
 
-  function deposit(
+  function claimRewardsInternal(address memberAddress)
+    internal
+    returns (uint256 rewardAmount)
+  {
+    rewardAmount = getRewardBalance(memberAddress);
+
+    if (rewardAmount == 0) {
+      return rewardAmount;
+    }
+
+    require(
+      totalPoolBalance >= rewardAmount,
+      "Pool balance not sufficient to withdraw rewards."
+    );
+    require(
+      ixtToken.transfer(memberAddress, rewardAmount),
+      "Unable to withdraw this value of IXT."  
+    );
+    /// @dev we know this is safe as totalPoolBalance >= rewardAmount
+    totalPoolBalance -= rewardAmount;
+
+    Member storage thisMember = members[memberAddress];
+    thisMember.previouslyAppliedLoyaltyBalance = 0;
+    thisMember.invitationRewards = 0;
+
+    uint256 loyaltyPeriodSeconds = loyaltyPeriodDays * 1 days;
+    uint256 elapsedTimeSinceEligible = block.timestamp - thisMember.startOfLoyaltyRewardEligibility;
+    if (elapsedTimeSinceEligible >= loyaltyPeriodSeconds) {
+      uint256 numWholePeriods = SafeMath.div(elapsedTimeSinceEligible, loyaltyPeriodSeconds);
+      thisMember.startOfLoyaltyRewardEligibility += numWholePeriods * loyaltyPeriodSeconds;
+    }
+  }
+
+  function depositInternal(
     address depositer,
     uint256 amount,
     bool isPoolDeposit

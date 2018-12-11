@@ -69,7 +69,9 @@ contract("IXTProtect", (accounts) => {
     whenNotPaused: "Cannot call when paused.",
     whenPaused: "Can only call this when paused.",
     isValidStakeLevel: "Is not valid a staking level.",
-    isValidLoyaltyPercentage: "Loyalty reward percentage must be between 0 and 100."
+    isValidLoyaltyPercentage: "Loyalty reward percentage must be between 0 and 100.",
+    noRewardsToClaim: "You have no rewards to claim.",
+    poolBalanceTooLow: "Pool balance not sufficient to withdraw rewards."
   };
   const lessDaysThanMinimumStakePeriod = parseInt(defaultLoyaltyPeriodDays) - 1;
   const moreDaysThanMinimumStakePeriod = parseInt(defaultLoyaltyPeriodDays) + 1;
@@ -169,6 +171,11 @@ contract("IXTProtect", (accounts) => {
     const oneHundred = new BN("100");
     const numPeriods = new BN(_numPeriods);
     return stakingAmount.mul(percentage).div(oneHundred).mul(numPeriods).toString();
+  }
+  function toIXT(inputString) {
+    const input = new BN(inputString);
+    const multiplier = new BN("10").pow(new BN(TokenAmounts.IXTDecimals));
+    return input.mul(multiplier).toString();
   }
 
   beforeEach(async () => {
@@ -404,12 +411,15 @@ contract("IXTProtect", (accounts) => {
     });
   });
 
-  describe.only("Balance getter functions", () => {
+  describe("Balance getter functions", () => {
     it("should get correct balance from getStakeBalance.", async () => {
       await prepContracts(memberData[0], TokenAmounts.stakingLevels[LOW], TokenAmounts.stakingLevels[LOW], true);
       await ixtProtect.join(LOW, zeroedBytes32, { from: memberData[0].memberAddress });
       const stakeBalance = await ixtProtect.getStakeBalance(memberData[0].memberAddress);
       assert.equal(stakeBalance, TokenAmounts.stakingLevels[LOW]);
+    });
+    describe("when getting all reward balances", () => {
+      // TODO
     });
     describe("when getting invitation reward balances", () => {
       beforeEach(async () => {
@@ -527,77 +537,37 @@ contract("IXTProtect", (accounts) => {
     });
   });
 
-  // describe("CancelMembership function", () => {
-  // });
+  describe("CancelMembership function", () => {
+    // TODO
+  });
 
-  // describe("Withdraw function", () => {
-  //   let depositAmount = "1";
-  //   const mem = memberData;
+  describe("ClaimRewards function", () => {
+    beforeEach(async () => {
+      await prepContracts(memberData[0], TokenAmounts.stakingLevels[HIGH], TokenAmounts.stakingLevels[HIGH], true);
+      await ixtProtect.join(HIGH, zeroedBytes32, { from: memberData[0].memberAddress } );
+    });
+    it("should not allow claims there is no balance to claim.", async () => {
+      expectRevert(
+        ixtProtect.claimRewards({from: memberData[0].memberAddress}),
+        ErrorReasons.noRewardsToClaim
+      );
+    });
+    it("should not allow claims when the pool balance is too low.", async () => {
+      await passTimeinDays("100"); // 1 Period passed since join (100 days total)
+      expectRevert(
+        ixtProtect.claimRewards({from: memberData[0].memberAddress}),
+        ErrorReasons.poolBalanceTooLow
+      );
+    });
+    it("should reduce the pool balance after claiming.", async () => {
+      await passTimeinDays("100"); // 1 Period passed since join (100 days total)
+      await ixtProtect.depositPool(toIXT("1000"), { from: deployer });
+      await ixtProtect.claimRewards({from: memberData[0].memberAddress});
+    });
+    it("should work as expected in a complex scenario.", async () => {
+    });
+  });
 
-  //   describe("When member has been joined for greater than minimum stake period.", () => {
-  //     it("should allow withdraw when trying to withdraw less than or equal to total account balance.", async () => {
-  //       const beforeBalances = await depositThenPassTime(depositAmount, moreDaysThanMinimumStakePeriod, mem);
-
-  //       await ixtProtect.withdraw(depositAmount, { from: mem.memberAddress });
-  //       const afterBalances = await recordBalances(mem.memberAddress);
-
-  //       const balanceChange = "-" + depositAmount;
-  //       assert(balanceCheck(beforeBalances.totalMemberBalance, afterBalances.totalMemberBalance, balanceChange));
-  //       assert(balanceCheck(beforeBalances.userAccountBalance, afterBalances.userAccountBalance, balanceChange));
-  //       assert(balanceCheck(beforeBalances.userStakeBalance, afterBalances.userStakeBalance, balanceChange));
-  //       assert(balanceCheck(beforeBalances.userTokenBalance, afterBalances.userTokenBalance, depositAmount));
-  //     });
-  //     it("should not allow withdraw when trying to withdraw greater than total account balance.", async () => {
-  //       const expectedReason = ErrorReasons.withdrawInsufficientBalance;
-  //       await depositThenPassTime(depositAmount, moreDaysThanMinimumStakePeriod, mem);
-
-  //       try {
-  //         await ixtProtect.withdraw(TokenAmounts.overMinimumStake, { from: mem.memberAddress });
-  //         assert.fail(`Expected '${expectedReason}' failure not received`);
-  //       } catch (error) {
-  //         assert.equal(error.reason, expectedReason);
-  //       }
-  //     });
-  //     it("should cancel membership when remaining balance after withdrawal is less than minimum stake amount.", async () => {
-  //       const beforeBalances = await depositThenPassTime(depositAmount, moreDaysThanMinimumStakePeriod, mem);
-
-  //       await ixtProtect.withdraw(TokenAmounts.minimumStake, { from: mem.memberAddress });
-  //       const afterBalances = await recordBalances(mem.memberAddress);
-
-  //       const balanceChange = parseInt(depositAmount) + parseInt(TokenAmounts.minimumStake); 
-  //       assert(balanceCheck(beforeBalances.totalMemberBalance, afterBalances.totalMemberBalance, -1 * balanceChange));
-  //       assert(balanceCheck(beforeBalances.userAccountBalance, afterBalances.userAccountBalance, -1 * balanceChange));
-  //       assert(balanceCheck(beforeBalances.userStakeBalance, afterBalances.userStakeBalance, -1 * balanceChange));
-  //       assert(balanceCheck(beforeBalances.userTokenBalance, afterBalances.userTokenBalance, balanceChange));
-  //     });
-  //   });
-  //   describe("When member has been joined for less than minimum stake period.", () => {
-  //     it("should not allow withdraw.", async () => {
-  //       const expectedReason = ErrorReasons.minStakePeriodNotComplete;
-  //       await depositThenPassTime(depositAmount, lessDaysThanMinimumStakePeriod, mem);
-
-  //       try {
-  //         await ixtProtect.withdraw(depositAmount, { from: mem.memberAddress });
-  //         assert.fail(`Expected '${expectedReason}' failure not received`);
-  //       } catch (error) {
-  //         assert.equal(error.reason, expectedReason);
-  //       }
-  //     });
-  //   });
-  //   describe("When user is not a member.", () => {
-  //     it("should not allow withdraw.", async () => {
-  //       const expectedReason = ErrorReasons.userIsJoined;
-  //       await prepContracts(memberData, TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, false);
-
-  //       try {
-  //         await ixtProtect.withdraw(depositAmount, { from: mem.memberAddress });
-  //         assert.fail(`Expected '${expectedReason}' failure not received`);
-  //       } catch (error) {
-  //         assert.equal(error.reason, expectedReason);
-  //       }
-  //     });
-  //   });
-  // });
   describe("DepositPool and WithdrawPool functions", () => {
     let depositAmount = "1";
     beforeEach(async () => {
@@ -631,66 +601,54 @@ contract("IXTProtect", (accounts) => {
       await expectRevert(ixtProtect.withdrawPool(depositAmount, { from: memberData[0].memberAddress }), ErrorReasons.onlyOwner);
     });
   });
-  // describe("RemoveMember function", () => {
-  //   beforeEach(async () => {
-  //     await prepContracts(memberData, TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, true);
-  //     await ixtProtect.join( { from: memberData.memberAddress });
-  //   });
-  //   describe("when called by a non-owner", () => {
-  //     it("should revert with the correct message.", async () => {
-  //       const expectedReason = ErrorReasons.onlyOwner;
-
-  //       try {
-  //         await ixtProtect.removeMember(memberData.memberAddress, { from: memberData.memberAddress });
-  //         assert.fail(`Expected '${expectedReason}' failure not received`);
-  //       } catch (error) {
-  //         assert.equal(error.reason, expectedReason);
-  //       }
-  //     });
-  //   });
-  //   describe("when called by an owner", () => {
-  //     it("should remove all data about a member.", async () => {
-  //       const addedMember = await ixtProtect.members(memberData.memberAddress);
-  //       assert.notEqual(addedMember.joinedTimestamp, "0");
+  describe("RemoveMember function", () => {
+    beforeEach(async () => {
+      // await prepContracts(memberData[0], TokenAmounts.stakingLevels[HIGH], TokenAmounts.stakingLevels[HIGH], true);
+      // await ixtProtect.join( { from: memberData[0].memberAddress });
+    });
+    describe("when called by an owner", () => {
+      it("should remove all data about a member.", async () => {
+        // const addedMember = await ixtProtect.members(memberData[0].memberAddress);
+        // assert.notEqual(addedMember.joinedTimestamp, "0");
       
-  //       await ixtProtect.removeMember(memberData.memberAddress, { from: deployer });
+        // await ixtProtect.removeMember(memberData[0].memberAddress, { from: deployer });
 
-  //       const removedMember = await ixtProtect.members(memberData.memberAddress);
-  //       const expectedReason = ErrorReasons.invalidOpcode;
-  //       try {
-  //         await ixtProtect.membersArray("0");
-  //         assert.fail(`Expected '${expectedReason}' failure not received`);
-  //       } catch (error) {
-  //         assert.equal(error.message, expectedReason);
-  //       }
-  //       assert.equal(removedMember.authorisedTimestamp.toString(), "0");
-  //       assert.equal(removedMember.joinedTimestamp.toString(), "0");
-  //       assert.equal(removedMember.membershipNumber.toString(), "0");
-  //       assert.equal(removedMember.invitationCode.toString(), zeroedBytes32);
-  //     });
-  //     it("should refund all stake and reward balance back to the removed user, but other balances remain the same.", async () => {
-  //       await giveUserBalanceOfTokens(memberData[1].memberAddress, TokenAmounts.overMinimumStake);
-  //       await setUserTokenApproval(memberData[1].memberAddress, ixtProtect.address, TokenAmounts.overMinimumStake);
-  //       await authoriseUser(ixtProtect, memberData[1], validator);
-  //       await ixtProtect.join( { from: memberData[1].memberAddress });
+        // const removedMember = await ixtProtect.members(memberData[0].memberAddress);
+        // const expectedReason = ErrorReasons.invalidOpcode;
+        // try {
+        //   await ixtProtect.membersArray("0");
+        //   assert.fail(`Expected '${expectedReason}' failure not received`);
+        // } catch (error) {
+        //   assert.equal(error.message, expectedReason);
+        // }
+        // assert.equal(removedMember.authorisedTimestamp.toString(), "0");
+        // assert.equal(removedMember.joinedTimestamp.toString(), "0");
+        // assert.equal(removedMember.membershipNumber.toString(), "0");
+        // assert.equal(removedMember.invitationCode.toString(), zeroedBytes32);
+      });
+      it("should refund all stake and reward balance back to the removed user, but other balances remain the same.", async () => {
+        // await giveUserBalanceOfTokens(memberData[1].memberAddress, TokenAmounts.overMinimumStake);
+        // await setUserTokenApproval(memberData[1].memberAddress, ixtProtect.address, TokenAmounts.overMinimumStake);
+        // await authoriseUser(ixtProtect, memberData[1], validator);
+        // await ixtProtect.join( { from: memberData[1].memberAddress });
 
-  //       const beforeBalancesUser1 = await recordBalances(memberData.memberAddress);
-  //       const beforeBalancesUser2 = await recordBalances(memberData[1].memberAddress);
-  //       await ixtProtect.removeMember(memberData.memberAddress, { from: deployer });
-  //       const afterBalancesUser1 = await recordBalances(memberData.memberAddress);
-  //       const afterBalancesUser2 = await recordBalances(memberData[1].memberAddress);
+        // const beforeBalancesUser1 = await recordBalances(memberData[0].memberAddress);
+        // const beforeBalancesUser2 = await recordBalances(memberData[1].memberAddress);
+        // await ixtProtect.removeMember(memberData[0].memberAddress, { from: deployer });
+        // const afterBalancesUser1 = await recordBalances(memberData.memberAddress);
+        // const afterBalancesUser2 = await recordBalances(memberData[1].memberAddress);
 
-  //       assert(balanceCheck(beforeBalancesUser1.totalMemberBalance, afterBalancesUser1.totalMemberBalance, "-" + TokenAmounts.minimumStake));
-  //       assert(balanceCheck(beforeBalancesUser1.userAccountBalance, afterBalancesUser1.userAccountBalance, "-" + TokenAmounts.minimumStake));
-  //       assert(balanceCheck(beforeBalancesUser1.userStakeBalance, afterBalancesUser1.userStakeBalance, "-" + TokenAmounts.minimumStake));
-  //       assert(balanceCheck(beforeBalancesUser1.userTokenBalance, afterBalancesUser1.userTokenBalance, TokenAmounts.minimumStake));
+        // assert(balanceCheck(beforeBalancesUser1.totalMemberBalance, afterBalancesUser1.totalMemberBalance, "-" + TokenAmounts.minimumStake));
+        // assert(balanceCheck(beforeBalancesUser1.userAccountBalance, afterBalancesUser1.userAccountBalance, "-" + TokenAmounts.minimumStake));
+        // assert(balanceCheck(beforeBalancesUser1.userStakeBalance, afterBalancesUser1.userStakeBalance, "-" + TokenAmounts.minimumStake));
+        // assert(balanceCheck(beforeBalancesUser1.userTokenBalance, afterBalancesUser1.userTokenBalance, TokenAmounts.minimumStake));
 
-  //       assert(balanceCheck(beforeBalancesUser2.userAccountBalance, afterBalancesUser2.userAccountBalance, "0"));
-  //       assert(balanceCheck(beforeBalancesUser2.userStakeBalance, afterBalancesUser2.userStakeBalance, "0"));
-  //       assert(balanceCheck(beforeBalancesUser2.userTokenBalance, afterBalancesUser2.userTokenBalance, "0"));
-  //     });
-  //   });
-  // });
+        // assert(balanceCheck(beforeBalancesUser2.userAccountBalance, afterBalancesUser2.userAccountBalance, "0"));
+        // assert(balanceCheck(beforeBalancesUser2.userStakeBalance, afterBalancesUser2.userStakeBalance, "0"));
+        // assert(balanceCheck(beforeBalancesUser2.userTokenBalance, afterBalancesUser2.userTokenBalance, "0"));
+      });
+    });
+  });
   // describe("Drain function", () => {
   //   let poolDeposit = TokenAmounts.lessThanMinimumStake;
   //   let beforeBalancesUser1;
@@ -764,113 +722,82 @@ contract("IXTProtect", (accounts) => {
   //     });
   //   });
   // });
-  // describe("Pause and Unpause functions", () => {
-  //   describe("when not called by the contract owner", () => {
-  //     beforeEach(async () => {
-  //       await prepContracts(memberData, TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, true);
-  //       await ixtProtect.join({ from: memberData.memberAddress });
-  //     });
-  //     describe("when pause is called", () => {
-  //       it("should revert with the correct message.", async () => {
-  //         await expectRevert(
-  //           ixtProtect.pause({ from: memberData.memberAddress }),
-  //           ErrorReasons.onlyPauser 
-  //         );
-  //       });
-  //     });
-  //     describe("when unpause is called", () => {
-  //       it("should revert with the correct message.", async () => {
-  //         await ixtProtect.pause({ from: deployer });
-  //         await expectRevert(
-  //           ixtProtect.unpause({ from: memberData.memberAddress }),
-  //           ErrorReasons.onlyPauser 
-  //         );
-  //       });
-  //     });
-  //   });
-  //   describe("when called by the contract owner", () => {
-  //     beforeEach(async () => {
-  //       await prepContracts(memberData, TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, true);
-  //     });
-  //     describe("when pause is called", () => {
-  //       it("should pause join function.", async () => {
-  //         await ixtProtect.pause({ from: deployer });
-  //         await expectRevert(
-  //           ixtProtect.join({ from: memberData.memberAddress }),
-  //           ErrorReasons.whenNotPaused 
-  //         );
-  //       });
-  //       it("should pause deposit function.", async () => {
-  //         await ixtProtect.join({ from: memberData.memberAddress }),
-  //         await ixtProtect.pause({ from: deployer });
-  //         await expectRevert(
-  //           ixtProtect.deposit("42", { from: memberData.memberAddress }),
-  //           ErrorReasons.whenNotPaused 
-  //         );
-  //       });
-  //       it("should pause withdraw function.", async () => {
-  //         await ixtProtect.join({ from: memberData.memberAddress }),
-  //         await ixtProtect.deposit("42", { from: memberData.memberAddress }),
-  //         await ixtProtect.pause({ from: deployer });
-  //         await expectRevert(
-  //           ixtProtect.withdraw("42", { from: memberData.memberAddress }),
-  //           ErrorReasons.whenNotPaused 
-  //         );
-  //       });
-  //       it("should not pause any other functions.", async () => {
-  //         await ixtProtect.join({ from: memberData.memberAddress }),
-  //         await ixtProtect.deposit("42", { from: memberData.memberAddress }),
-  //         await ixtProtect.pause({ from: deployer });
-  //         await authoriseUser(ixtProtect, memberData[1], validator);
-  //         await ixtProtect.removeMember(memberData.memberAddress, { from: deployer });
-  //         await ixtProtect.depositPool("42", { from: deployer });
-  //         await ixtProtect.withdrawPool("42", { from: deployer });
-  //         await ixtProtect.drain({ from: deployer });
-  //       });
-  //       it("should revert with the correct message if pause is called again.", async () => {
-  //         await ixtProtect.pause({ from: deployer });
-  //         await expectRevert(
-  //           ixtProtect.pause({ from: deployer }),
-  //           ErrorReasons.whenNotPaused 
-  //         );
-  //       });
-  //     });
-  //     describe("when unpause is called", () => {
-  //       it("should revert with the correct message if not already paused.", async () => {
-  //         await expectRevert(
-  //           ixtProtect.unpause({ from: deployer }),
-  //           ErrorReasons.whenPaused 
-  //         );
-  //       });
-  //       it("should revert with the correct message if unpause is called again.", async () => {
-  //         await ixtProtect.pause({ from: deployer });
-  //         await ixtProtect.unpause({ from: deployer });
-  //         await expectRevert(
-  //           ixtProtect.unpause({ from: deployer }),
-  //           ErrorReasons.whenPaused 
-  //         );
-  //       });
-  //       it("should unpause join function.", async () => {
-  //         await ixtProtect.pause({ from: deployer });
-  //         await ixtProtect.unpause({ from: deployer });
-  //         await ixtProtect.join({ from: memberData.memberAddress });
-  //       });
-  //       it("should unpause deposit function.", async () => {
-  //         await ixtProtect.pause({ from: deployer });
-  //         await ixtProtect.unpause({ from: deployer });
-  //         await ixtProtect.join({ from: memberData.memberAddress });
-  //         await ixtProtect.deposit("42", { from: memberData.memberAddress });
-  //       });
-  //       it("should unpause withdraw function.", async () => {
-  //         await ixtProtect.pause({ from: deployer });
-  //         await ixtProtect.unpause({ from: deployer });
-  //         await ixtProtect.join({ from: memberData.memberAddress });
-  //         await depositThenPassTime("42", moreDaysThanMinimumStakePeriod, memberData);
-  //         await ixtProtect.withdraw("42", { from: memberData.memberAddress });
-  //       });
-  //     });
-  //   });
-  // });
+  describe("Pause and Unpause functions", () => {
+    describe("when not called by the contract owner", () => {
+      beforeEach(async () => {
+        // await prepContracts(memberData[0], TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, true);
+        // await ixtProtect.join({ from: memberData[0].memberAddress });
+      });
+      describe("when pause is called", () => {
+        it("should revert with the correct message.", async () => {
+          // await expectRevert(
+          //   ixtProtect.pause({ from: memberData[0].memberAddress }),
+          //   ErrorReasons.onlyPauser 
+          // );
+        });
+      });
+      describe("when unpause is called", () => {
+        it("should revert with the correct message.", async () => {
+          // await ixtProtect.pause({ from: deployer });
+          // await expectRevert(
+          //   ixtProtect.unpause({ from: memberData[0].memberAddress }),
+          //   ErrorReasons.onlyPauser 
+          // );
+        });
+      });
+    });
+    describe("when called by the contract owner", () => {
+      beforeEach(async () => {
+        // await prepContracts(memberData[0], TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, true);
+      });
+      describe("when pause is called", () => {
+        it("should pause join function.", async () => {
+          // await ixtProtect.pause({ from: deployer });
+          // await expectRevert(
+          //   ixtProtect.join({ from: memberData[0].memberAddress }),
+          //   ErrorReasons.whenNotPaused 
+          // );
+        });
+        it("should not pause any other functions.", async () => {
+          // await ixtProtect.join({ from: memberData[0].memberAddress }),
+          // await ixtProtect.pause({ from: deployer });
+          // await authoriseUser(ixtProtect, memberData[1], validator);
+          // await ixtProtect.removeMember(memberData[0].memberAddress, { from: deployer });
+          // await ixtProtect.depositPool("42", { from: deployer });
+          // await ixtProtect.withdrawPool("42", { from: deployer });
+          // await ixtProtect.drain({ from: deployer });
+        });
+        it("should revert with the correct message if pause is called again.", async () => {
+          // await ixtProtect.pause({ from: deployer });
+          // await expectRevert(
+          //   ixtProtect.pause({ from: deployer }),
+          //   ErrorReasons.whenNotPaused 
+          // );
+        });
+      });
+      describe("when unpause is called", () => {
+        it("should revert with the correct message if not already paused.", async () => {
+          // await expectRevert(
+          //   ixtProtect.unpause({ from: deployer }),
+          //   ErrorReasons.whenPaused 
+          // );
+        });
+        it("should revert with the correct message if unpause is called again.", async () => {
+          // await ixtProtect.pause({ from: deployer });
+          // await ixtProtect.unpause({ from: deployer });
+          // await expectRevert(
+          //   ixtProtect.unpause({ from: deployer }),
+          //   ErrorReasons.whenPaused 
+          // );
+        });
+        it("should unpause join function.", async () => {
+          // await ixtProtect.pause({ from: deployer });
+          // await ixtProtect.unpause({ from: deployer });
+          // await ixtProtect.join({ from: memberData[0].memberAddress });
+        });
+      });
+    });
+  });
   describe("setInvitationReward function", () => {
     const newReward = "42";
     it("should work when called by the owner account.", async () => {

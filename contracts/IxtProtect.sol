@@ -127,20 +127,20 @@ contract RewardManager {
 //   /*      (member functions)      */
 //   [x] function join(uint8 _stakeLevel, bytes32 invitationCodeToClaim) public;
 //   [ ] function cancelMembership() public;
-//   [ ] function claimRewards() public;
+//   [T] function claimRewards() public;
 //   [x] function getMembersArrayLength() public view returns (uint256);
-//   [?] function getAccountBalance(address memberAddress) public view returns (uint256);
+//   [x] function getAccountBalance(address memberAddress) public view returns (uint256);
 //   [x] function getStakeBalance(address memberAddress) public view returns (uint256);
-//   [?] function getRewardBalance(address memberAddress) public view returns (uint256);
+//   [T] function getRewardBalance(address memberAddress) public view returns (uint256);
 //   [x] function getInvitationRewardBalance(address memberAddress) public view returns (uint256);
-//   [?] function getLoyaltyRewardBalance(address memberAddress) public view returns (uint256);
+//   [x] function getLoyaltyRewardBalance(address memberAddress) public view returns (uint256);
 //   /*      (admin functions)      */
 //   [x] function authoriseUser(uint256 _membershipNumber, address _memberAddress, bytes32 _invitationCode) public;
 //   [x] function depositPool(uint256 amountToDeposit) public;
 //   [x] function withdrawPool(uint256 amountToWithdraw) public;
-//   [ ] function removeMember(address userAddress) public;
+//   [T] function removeMember(address userAddress) public;
 //   [x] function setInvitationReward(uint256 _invitationReward) public
-//   [?] function setLoyaltyRewardPercentage(uint256 loyaltyRewardPercentage) public;
+//   [x] function setLoyaltyRewardPercentage(uint256 loyaltyRewardPercentage) public;
 //   [ ] function drain() public;
 // }
 
@@ -341,52 +341,6 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     }
   }
 
-/*
-  function withdraw(uint256 amount)
-    public
-    whenNotPaused()
-    userIsJoined(msg.sender)
-  {
-    Member storage member = members[msg.sender];
-    uint256 elapsedTime = block.timestamp - member.joinedTimestamp;
-    require(
-      elapsedTime >= minimumStakePeriodSeconds,
-      "Minimum stake period is not complete."
-    );
-    bool sufficientBalance = (member.stakeBalance + member.rewardBalance) > amount;
-    require(
-      sufficientBalance &&
-      ixtToken.transfer(msg.sender, amount),
-      "Unable to withdraw this value of IXT."  
-    );
-    uint256 amountToTake = amount;
-    if (member.rewardBalance > 0) {
-      if (member.rewardBalance >= amountToTake) {
-        member.rewardBalance = SafeMath.sub(member.rewardBalance, amountToTake);
-        amountToTake = 0;
-      } else {
-        member.rewardBalance = 0;
-        amountToTake = SafeMath.sub(amountToTake, member.rewardBalance);
-      }
-    }
-    if (amountToTake > 0) {
-      require(
-        member.stakeBalance >= amountToTake,
-        "Cannot withdraw this value of IXT."
-      );
-      member.stakeBalance = SafeMath.sub(member.stakeBalance, amountToTake);
-      amountToTake = 0;
-    }
-    totalMemberBalance = SafeMath.sub(totalMemberBalance, amount);
-
-    if (member.stakeBalance < MINIMUM_STAKE) {
-      cancelMembership(msg.sender);
-    }
-
-    emit Withdrawn(msg.sender, amount);
-  }
-*/
-
   /*      (admin functions)      */
 
   function depositPool(uint256 amountToDeposit)
@@ -416,7 +370,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     userIsAuthorised(userAddress)
     onlyOwner
   {
-    // cancelMembershipInternal(userAddress);
+    cancelMembershipInternal(userAddress);
   }
 
   function drain() public onlyOwner {
@@ -535,50 +489,53 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     loyaltyRewardPercentage = newLoyaltyRewardPercentage;
   }
 
-  // /*                              */
-  // /*      INTERNAL FUNCTIONS      */
-  // /*                              */
+  /*                              */
+  /*      INTERNAL FUNCTIONS      */
+  /*                              */
 
-  // function cancelMembershipInternal(address memberAddress) internal {
-  //   uint256 amountRefunded = refundUserBalance(memberAddress);
+  function cancelMembershipInternal(address memberAddress) internal {
+    uint256 amountRefunded = refundUserBalance(memberAddress);
 
-  //   delete members[memberAddress];
+    delete registeredInvitationCodes[members[memberAddress].invitationCode];
 
-  //   removeMemberFromArray(memberAddress);
+    delete members[memberAddress];
 
-  //   emit MemberCancelled(memberAddress, amountRefunded);
-  // }
+    removeMemberFromArray(memberAddress);
+    
+    emit MemberCancelled(memberAddress, amountRefunded);
+  }
 
-  // function refundUserBalance(
-  //   address memberAddress
-  // ) 
-  //   internal
-  //   returns (uint256 amountRefunded)
-  // {
-  //   Member storage member = members[memberAddress];
+  function refundUserBalance(
+    address memberAddress
+  ) 
+    internal
+    returns (uint256 amountRefunded)
+  {
+    Member storage member = members[memberAddress];
 
-  //   uint256 amountToRefund = getAccountBalance(memberAddress);
-  //   bool userJoined = member.joinedTimestamp != 0;
-  //   if (amountToRefund > 0 && userJoined) {
-  //     require(
-  //       ixtToken.transfer(memberAddress, amountToRefund),
-  //       "Unable to withdraw this value of IXT."  
-  //     );
-  //     totalMemberBalance = SafeMath.sub(totalMemberBalance, amountToRefund);
-  //   }
-  //   return amountToRefund;
-  // }
+    uint256 amountToRefund = getAccountBalance(memberAddress);
+    bool userJoined = member.joinedTimestamp != 0;
+    if (amountToRefund > 0 && userJoined) {
+      require(
+        ixtToken.transfer(memberAddress, amountToRefund),
+        "Unable to withdraw this value of IXT."  
+      );
+      // TODO - make sure that the pool balance is also reduced!!!
+      totalMemberBalance = SafeMath.sub(totalMemberBalance, amountToRefund);
+    }
+    return amountToRefund;
+  }
 
-  // function removeMemberFromArray(address memberAddress) internal {
-  //   /// @dev removing the member address from the membersArray
-  //   for (uint256 index; index < membersArray.length; index++) {
-  //     if (membersArray[index] == memberAddress) {
-  //       membersArray[index] = membersArray[membersArray.length - 1];
-  //       membersArray.length -= 1;
-  //       break;
-  //     }
-  //   }
-  // }
+  function removeMemberFromArray(address memberAddress) internal {
+    /// @dev removing the member address from the membersArray
+    for (uint256 index; index < membersArray.length; index++) {
+      if (membersArray[index] == memberAddress) {
+        membersArray[index] = membersArray[membersArray.length - 1];
+        membersArray.length -= 1;
+        break;
+      }
+    }
+  }
 
   function deposit(
     address depositer,

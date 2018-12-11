@@ -10,9 +10,17 @@ import './styles.css';
 
 class InvitationLink extends React.Component {
 
+  state = { invitationLink: '' };
+
   constructor(props) {
     super(props);
     this.copy = this.copy.bind(this);
+  }
+
+  componentDidMount = async () => {
+    const member = this.props.member;
+    const invitationLink = 'https://ixt.global/sign-up?invitation=' + member.invitationCode;
+    this.setState({ invitationLink });
   }
 
   copy() {
@@ -28,13 +36,13 @@ class InvitationLink extends React.Component {
     return (
       <div>
         <h2>Invitation link</h2>
-        This in your personal invitation link. You can simply copy and send it to anyone you wish to invite to join IXT Protect.
+        You can simply copy and send it to anyone you wish to invite to join IXT Protect.
         You will be rewarded with 100 IXT for every successful registration.
         <br/>
         <Grid>
-          <Grid.Column width={5}>
+          <Grid.Column width={6}>
             <Segment>
-              <b>{this.props.url}</b>
+              <b>{ this.state.invitationLink }</b>
               <Popup trigger={<Button className='invitation' size='small' icon='copy outline' onClick={this.copy} />} content='Copied to clipboard' on='click' hideOnScroll/>
             </Segment>
           </Grid.Column>

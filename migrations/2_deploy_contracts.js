@@ -1,6 +1,6 @@
 var IxtProtect = artifacts.require("./IxtProtect.sol");
 
-module.exports = function(deployer, network, accounts) {
+module.exports = async function(deployer, network, accounts) {
   const validator = accounts[0];
   const IXTTokenAddress = "0xfca47962d45adfdfd1ab2d972315db4ce7ccf094";
   const loyaltyPeriod = "90";
@@ -21,4 +21,11 @@ module.exports = function(deployer, network, accounts) {
     loyaltyRewardPercentage,
     ixtStakingLevels
   );
+//  if(network == 'test') {
+   console.log('In test mode, adding the owner as a member...');
+   const contract = await IxtProtect.at(IxtProtect.address);
+   contract.authoriseUser('1', accounts[0], "0xA");
+   contract.authoriseUser('2', accounts[1], "0xB");
+//  }
+
 };

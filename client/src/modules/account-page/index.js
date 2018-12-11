@@ -11,16 +11,18 @@ import './styles.css';
 
 import AccountDetails from '../../components/account-details';
 import InvitationLink from '../../components/invitation-link';
-import Deposit from '../../components/deposit';
+import Stake from '../../components/stake';
 import Withdraw from '../../components/withdraw';
-import TransactionGrid from "../../components/transaction-grid";
+import TransactionGrid from '../../components/transaction-grid';
 
-import getWeb3 from "../../utils/getWeb3";
-import getContract from "../../utils/getContract";
+import getWeb3 from '../../utils/getWeb3';
+import getContract from '../../utils/getContract';
+import IxtProtect from '../../contracts/IxtProtect.json';
+import truffleContract from 'truffle-contract';
 
 class AccountPage extends React.Component {
 
-  state = { web3: null, accounts: null, contract: null };
+  state = { web3: null, account: null, contract: null };
 
   componentDidMount = async () => {
     try {
@@ -29,15 +31,19 @@ class AccountPage extends React.Component {
 
       // Use web3 to get the user's accounts.
       const accounts = await web3.eth.getAccounts();
+      const account = web3.utils.toChecksumAddress(accounts[0]);
 
       // Get the contract instance.
-      const contract = getContract(web3);
+      //const contract = await getContract(web3);
+      const Contract = truffleContract(IxtProtect);
+      Contract.setProvider(web3.currentProvider);
+      const contract = await Contract.deployed();
+      const member = await contract.members(account);
 
-      const accountBalance = 123;
-      const rewardBalance = 123;//await instance.getRewardBalance;
-      const invitationUrl = 'https://ixt.global/sign-up/123ABC'
-
-      this.setState({ web3, accounts,  accountBalance, rewardBalance, invitationUrl });
+      if(member.membershipNumber.toString() == 0) {
+        alert('You are not a member');
+      }
+      this.setState({ web3, account, contract, member });
 
     } catch (error) {
       // Catch any errors for any of the above operations.
@@ -56,28 +62,16 @@ class AccountPage extends React.Component {
       <Container>
 
         <h1>Your account</h1>
-        <h4 className='address'>Address: { this.state.accounts[0] }</h4>
+        <h4>Address: { this.state.account }</h4>
 
         <AccountDetails
-          accountBalance={this.state.accountBalance.toString()}
-          rewardBalance={this.state.rewardBalance.toString()}
-          products={this.state.products}/>
+          account={ this.state.account }
+          contract={ this.state.contract }
+        />
 
-        <InvitationLink url={this.state.invitationUrl}/>
-
-        <Grid columns={2} textAlign='center'>
-          <Grid.Row>
-            <Grid.Column>
-              <Deposit contract={this.state.contract} />
-            </Grid.Column>
-            <Grid.Column>
-              <Withdraw />
-            </Grid.Column>
-          </Grid.Row>
-        </Grid>
+        <InvitationLink member={ this.state.member } />
 
         <TransactionGrid />
-
       </Container>
     );
   }

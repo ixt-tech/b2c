@@ -4,12 +4,13 @@ import {
   Divider,
 } from 'semantic-ui-react';
 import ReactDataGrid from 'react-data-grid';
-import AccountDialog from '../../components/account-dialog'
+import MemberDialog from '../../components/member-dialog'
 
 import './styles.css';
-import getWeb3 from "../../utils/getWeb3";
-import getContract from "../../utils/getContract";
-import AccountDetails from "../../components/account-details";
+import getWeb3 from '../../utils/getWeb3';
+import IxtProtect from '../../contracts/IxtProtect.json';
+import truffleContract from 'truffle-contract';
+
 
 class AdminPage extends React.Component {
 
@@ -27,9 +28,15 @@ class AdminPage extends React.Component {
 
       // Use web3 to get the user's accounts.
       const accounts = await web3.eth.getAccounts();
+      const account = accounts[0];
 
       // Get the contract instance.
-      const contract = getContract(web3);
+      const Contract = truffleContract(IxtProtect);
+      Contract.setProvider(web3.currentProvider);
+      const contract = await Contract.deployed();
+
+      const length = await contract.membersArray.length;
+      console.log(length);
 
       const members = [
         { membershipNumber: 1, memberAddress: '0x1', productsCovered: 'Personal Travel Crisis', invitationCode: '0x1' },
@@ -44,7 +51,7 @@ class AdminPage extends React.Component {
         { key: 'invitationCode', name: 'Invite Code' }
       ];
 
-      this.setState({ web3, accounts, contract, members, members, columns });
+      this.setState({ web3, account, contract, members, columns });
 
     } catch (error) {
       // Catch any errors for any of the above operations.
@@ -66,8 +73,8 @@ class AdminPage extends React.Component {
     return (
       <Container>
         <h1>IXT Protect Admin</h1>
-        <h4 className='address'>Address: { this.state.accounts[0] }</h4>
-        <AccountDialog />
+        <h4 className='address'>Address: { this.state.account }</h4>
+        <MemberDialog account={this.state.account} contract={this.state.contract} />
         <h2>Members</h2>
         <ReactDataGrid
           columns={this.state.columns}

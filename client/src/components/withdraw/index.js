@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Form,
   Input,
   Label,
   Button,
@@ -13,7 +14,7 @@ class Withdraw extends React.Component {
     super(props);
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
-    this.state = {amount: 0.00, isValid: false, contract: this.props.contract};
+    this.state = {isValid: false, contract: this.props.contract};
   }
 
   handleChange(event) {
@@ -28,9 +29,6 @@ class Withdraw extends React.Component {
   handleSubmit = async (event) => {
     const contract = this.state.contract;
     await contract.deposit(123);
-//    await this.state.contract.deposit(123).then(function(result) {
-//      alert(result);
-//    });
     event.preventDefault();
   }
 
@@ -39,16 +37,14 @@ class Withdraw extends React.Component {
     return (
       <div>
         <h2>Withdraw</h2>
-        Deposit to your IXT Protect account. By entering the amount and clicking Deposit you will approve a
-        transaction from your account to the IXT Protect pool.
+        Withdraw the rewards you have earned.
         <Segment className='withdraw'>
-          <form onSubmit={this.handleSubmit}>
-            <Input labelPosition='left' type='number' placeholder='Amount...' >
-              <Label basic>IXT</Label>
-              <input value={this.state.amount} onChange={this.handleChange} />
-              <Button type='submit' onClick={this.handleSubmit} disabled={!this.state.isValid}>Withdraw</Button>
-            </Input>
-          </form>
+          <Form onSubmit={this.handleSubmit}>
+            <Form.Group>
+              <Form.Input placeholder='Name' width={14} name='name' value={this.state.amount} onChange={this.handleChange} />
+              <Form.Button content='Withdraw' />
+            </Form.Group>
+          </Form>
         </Segment>
       </div>
     );

@@ -404,7 +404,7 @@ contract("IXTProtect", (accounts) => {
     });
   });
 
-  describe("Balance getter functions", () => {
+  describe.only("Balance getter functions", () => {
     it("should get correct balance from getStakeBalance.", async () => {
       await prepContracts(memberData[0], TokenAmounts.stakingLevels[LOW], TokenAmounts.stakingLevels[LOW], true);
       await ixtProtect.join(LOW, zeroedBytes32, { from: memberData[0].memberAddress });
@@ -450,18 +450,73 @@ contract("IXTProtect", (accounts) => {
         rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
         assert.equal(rewardBalance, "0");
       });
-      it("should get a loyalty reward after 90 days.", async () => {
+      it("should get correct loyalty reward after 90 days.", async () => {
         await passTimeinDays("90");
         await passTimeinHours("1");
         const numPeriods = "1";
         let rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
         assert.equal(rewardBalance, getLoyaltyRewardAmount(TokenAmounts.stakingLevels[LOW], defaultLoyaltyPercentage, numPeriods));
       });
-      it("should get 2 loyalty rewards after 200 days.", async () => {
+      it("should get correct loyalty rewards after 200 days.", async () => {
         await passTimeinDays("200");
         const numPeriods = "2";
         let rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
         assert.equal(rewardBalance, getLoyaltyRewardAmount(TokenAmounts.stakingLevels[LOW], defaultLoyaltyPercentage, numPeriods));
+      });
+      it("should get correct loyalty in a more complex scenario where rewards are changed.", async () => {
+        const stakeLevel = TokenAmounts.stakingLevels[LOW];
+        await passTimeinDays("100"); // 1 Period passed since join (100 days total)
+        let numPeriodsSinceJoin = "1";
+        let numPeriodsSinceRewardChanged = numPeriodsSinceJoin;
+
+        let rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
+        assert.equal(rewardBalance, getLoyaltyRewardAmount(stakeLevel, defaultLoyaltyPercentage, numPeriodsSinceJoin));
+
+        await passTimeinDays("200"); // 3 Periods passed since join (300 days total)
+        numPeriodsSinceJoin = "3";
+        numPeriodsSinceRewardChanged = numPeriodsSinceJoin;
+
+        rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
+        let expectedRewardUntilNow = getLoyaltyRewardAmount(stakeLevel, defaultLoyaltyPercentage, numPeriodsSinceJoin);
+        assert.equal(rewardBalance, expectedRewardUntilNow);
+
+        let newLoyaltyRewardPercentage = "20";
+        await ixtProtect.setLoyaltyRewardPercentage(newLoyaltyRewardPercentage, { from: deployer });
+        numPeriodsSinceRewardChanged = "0";
+
+        rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
+        assert.equal(rewardBalance, expectedRewardUntilNow);
+
+        await passTimeinDays("200"); // 5 Periods passed since join (500 days total)
+        numPeriodsSinceJoin = "5";
+        numPeriodsSinceRewardChanged = "2";
+
+        rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
+        let expectedRewardSinceUpdated = getLoyaltyRewardAmount(stakeLevel, newLoyaltyRewardPercentage, numPeriodsSinceRewardChanged);
+        expectedRewardUntilNow = new BN(expectedRewardUntilNow) .add(new BN(expectedRewardSinceUpdated));
+        assert.equal(rewardBalance.toString(), expectedRewardUntilNow.toString());
+
+        await passTimeinDays("100"); // 6 Periods passed since join (600 days total)
+        numPeriodsSinceJoin = "6";
+        numPeriodsSinceRewardChanged = "3";
+
+        rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
+        expectedRewardUntilNow = expectedRewardUntilNow.add(new BN(getLoyaltyRewardAmount(stakeLevel, newLoyaltyRewardPercentage, "1")));
+        assert.equal(rewardBalance.toString(), expectedRewardUntilNow.toString());
+
+        newLoyaltyRewardPercentage = "50";
+        await ixtProtect.setLoyaltyRewardPercentage(newLoyaltyRewardPercentage, { from: deployer });
+
+        rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
+        assert.equal(rewardBalance.toString(), expectedRewardUntilNow.toString());
+
+        await passTimeinDays("100"); // 6 Periods passed since join (600 days total)
+        numPeriodsSinceJoin = "7";
+        numPeriodsSinceRewardChanged = "1";
+
+        rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
+        expectedRewardUntilNow = expectedRewardUntilNow.add(new BN(getLoyaltyRewardAmount(stakeLevel, newLoyaltyRewardPercentage, "1")));
+        assert.equal(rewardBalance.toString(), expectedRewardUntilNow.toString());
       });
     });
     it("should get correct balance from getAccountBalance.", async () => {

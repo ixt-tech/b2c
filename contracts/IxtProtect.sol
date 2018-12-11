@@ -307,6 +307,40 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     // cancelMembershipInternal(msg.sender);
   }
 
+  function claimRewards()
+    public
+    whenNotPaused()
+    userIsJoined(msg.sender)
+  {
+    uint256 rewardAmount = getRewardBalance(msg.sender);
+
+    require(
+      rewardAmount > 0,
+      "You have no rewards to claim."
+    );
+    require(
+      totalPoolBalance >= rewardAmount,
+      "Pool balance not sufficient to withdraw rewards."
+    );
+    require(
+      ixtToken.transfer(msg.sender, rewardAmount),
+      "Unable to withdraw this value of IXT."  
+    );
+    /// @dev we know this is safe as totalPoolBalance >= rewardAmount
+    totalPoolBalance -= rewardAmount;
+
+    Member storage thisMember = members[msg.sender];
+    thisMember.previouslyAppliedLoyaltyBalance = 0;
+    thisMember.invitationRewards = 0;
+
+    uint256 loyaltyPeriodSeconds = loyaltyPeriodDays * 1 days;
+    uint256 elapsedTimeSinceEligible = block.timestamp - thisMember.startOfLoyaltyRewardEligibility;
+    if (elapsedTimeSinceEligible >= loyaltyPeriodSeconds) {
+      uint256 numWholePeriods = SafeMath.div(elapsedTimeSinceEligible, loyaltyPeriodSeconds);
+      thisMember.startOfLoyaltyRewardEligibility += numWholePeriods * loyaltyPeriodSeconds;
+    }
+  }
+
 /*
   function withdraw(uint256 amount)
     public

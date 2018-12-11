@@ -95,28 +95,21 @@ contract StakeManager {
 
 contract RewardManager {
 
-  /*      Data types      */
-
-  struct LoyaltyReward {
-    uint256 changeTimestamp;
-    uint256 loyaltyRewardPercentage;
-  }
-
   /*      Variable declarations      */
 
   /// @dev the reward received when inviting someone
   uint256 public invitationReward;
   /// @dev the period after which a member gets a loyalty reward
-  uint256 public loyaltyPeriod;
-  /// @dev contains all times the loyalty reward amount was changed
-  LoyaltyReward[] public loyaltyRewardChanges;
+  uint256 public loyaltyPeriodDays;
+  /// @dev 
+  uint256 public loyaltyRewardPercentage;
 
   /*      Constructor      */
 
   constructor(
     uint256 _invitationReward,
-    uint256 _loyaltyRewardPercentage,
-    uint256 _loyaltyPeriod
+    uint256 _loyaltyPeriodDays,
+    uint256 _loyaltyRewardPercentage
   ) public {
     require(
       _loyaltyRewardPercentage >= 0 &&
@@ -124,15 +117,32 @@ contract RewardManager {
       "Loyalty reward percentage must be between 0 and 100."
     );
     invitationReward = _invitationReward;
-    loyaltyPeriod = _loyaltyPeriod;
-    LoyaltyReward memory loyaltyReward = LoyaltyReward({
-      changeTimestamp: block.timestamp,
-      loyaltyRewardPercentage: _loyaltyRewardPercentage
-    });
-    loyaltyRewardChanges.push(loyaltyReward);
+    loyaltyPeriodDays = _loyaltyPeriodDays;
+    loyaltyRewardPercentage = _loyaltyRewardPercentage;
   }
 
 }
+
+// contract IxtProtectInterface {
+//   /*      (member functions)      */
+//   [x] function join(uint8 _stakeLevel, bytes32 invitationCodeToClaim) public;
+//   [ ] function cancelMembership() public;
+//   [ ] function claimRewards() public;
+//   [x] function getMembersArrayLength() public view returns (uint256);
+//   [?] function getAccountBalance(address memberAddress) public view returns (uint256);
+//   [x] function getStakeBalance(address memberAddress) public view returns (uint256);
+//   [?] function getRewardBalance(address memberAddress) public view returns (uint256);
+//   [x] function getInvitationRewardBalance(address memberAddress) public view returns (uint256);
+//   [?] function getLoyaltyRewardBalance(address memberAddress) public view returns (uint256);
+//   /*      (admin functions)      */
+//   [x] function authoriseUser(uint256 _membershipNumber, address _memberAddress, bytes32 _invitationCode) public;
+//   [x] function depositPool(uint256 amountToDeposit) public;
+//   [x] function withdrawPool(uint256 amountToWithdraw) public;
+//   [ ] function removeMember(address userAddress) public;
+//   [x] function setInvitationReward(uint256 _invitationReward) public
+//   [?] function setLoyaltyRewardPercentage(uint256 loyaltyRewardPercentage) public;
+//   [ ] function drain() public;
+// }
 
 contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
 
@@ -175,11 +185,12 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   struct Member {
     uint256 authorisedTimestamp;
     uint256 joinedTimestamp;
-    uint256 timestampOfPreviousClaim;
+    uint256 startOfLoyaltyRewardEligibility;
     uint256 membershipNumber;
     bytes32 invitationCode;
     uint256 stakeBalance;
     uint256 invitationRewards;
+    uint256 previouslyAppliedLoyaltyBalance;
   }
 
   /*      Variable declarations      */
@@ -205,7 +216,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
 
   constructor(
     address _validator,
-    uint256 _loyaltyPeriod,
+    uint256 _loyaltyPeriodDays,
     address _ixtToken,
     uint256 _invitationReward,
     uint256 _loyaltyRewardPercentage,
@@ -214,7 +225,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     public
     RoleManager(_validator)
     StakeManager(_ixtStakingLevels)
-    RewardManager(_invitationReward, _loyaltyRewardPercentage, _loyaltyPeriod)
+    RewardManager(_invitationReward, _loyaltyPeriodDays, _loyaltyRewardPercentage)
   {
     require(_ixtToken != address(0x0), "ixtToken address was set to 0.");
     ixtToken = IERC20(_ixtToken);
@@ -247,11 +258,12 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     Member memory member = Member({
       authorisedTimestamp: block.timestamp,
       joinedTimestamp: 0,
-      timestampOfPreviousClaim: 0,
+      startOfLoyaltyRewardEligibility: 0,
       membershipNumber: _membershipNumber,
       invitationCode: _invitationCode,
       stakeBalance: 0,
-      invitationRewards: 0
+      invitationRewards: 0,
+      previouslyAppliedLoyaltyBalance: 0
     });
     members[_memberAddress] = member;
     membersArray.push(_memberAddress);
@@ -272,6 +284,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     deposit(msg.sender, ixtStakingLevels[uint256(_stakeLevel)], false);
     Member storage member = members[msg.sender];
     member.joinedTimestamp = block.timestamp;
+    member.startOfLoyaltyRewardEligibility = block.timestamp;
     /// @dev add this members invitation code to the mapping
     registeredInvitationCodes[member.invitationCode] = msg.sender;
     /// @dev if the invitationCodeToClaim is already registered, add on reward
@@ -286,13 +299,13 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     emit Joined(msg.sender, member.membershipNumber);
   }
 
-  // function cancelMembership()
-  //   public
-  //   whenNotPaused()
-  //   userIsJoined(msg.sender)
-  // {
-  //   cancelMembershipInternal(msg.sender);
-  // }
+  function cancelMembership()
+    public
+    whenNotPaused()
+    userIsJoined(msg.sender)
+  {
+    // cancelMembershipInternal(msg.sender);
+  }
 
 /*
   function withdraw(uint256 amount)
@@ -342,59 +355,63 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
 
   /*      (admin functions)      */
 
-  // function depositPool(uint256 amountToDeposit)
-  //   public
-  //   onlyOwner
-  // {
-  //   deposit(msg.sender, amountToDeposit, true);
-  // }
+  function depositPool(uint256 amountToDeposit)
+    public
+    onlyOwner
+  {
+    deposit(msg.sender, amountToDeposit, true);
+  }
 
-  // function withdrawPool(uint256 amountToWithdraw)
-  //   public
-  //   onlyOwner
-  // {
-  //   if (amountToWithdraw > 0) {
-  //     require(
-  //       totalPoolBalance >= amountToWithdraw &&
-  //       ixtToken.transfer(msg.sender, amountToWithdraw),
-  //       "Unable to withdraw this value of IXT."  
-  //     );
-  //     totalPoolBalance = SafeMath.sub(totalPoolBalance, amountToWithdraw);
-  //   }
-  // }
+  function withdrawPool(uint256 amountToWithdraw)
+    public
+    onlyOwner
+  {
+    if (amountToWithdraw > 0) {
+      require(
+        totalPoolBalance >= amountToWithdraw &&
+        ixtToken.transfer(msg.sender, amountToWithdraw),
+        "Unable to withdraw this value of IXT."  
+      );
+      totalPoolBalance = SafeMath.sub(totalPoolBalance, amountToWithdraw);
+    }
+  }
 
-  // /// @dev Can be called if user is authorised or joined
-  // function removeMember(address userAddress)
-  //   public
-  //   userIsAuthorised(userAddress)
-  //   onlyOwner
-  // {
-  //   cancelMembershipInternal(userAddress);
-  // }
+  /// @dev Can be called if user is authorised or joined
+  function removeMember(address userAddress)
+    public
+    userIsAuthorised(userAddress)
+    onlyOwner
+  {
+    // cancelMembershipInternal(userAddress);
+  }
 
-  // function drain() public onlyOwner {
-  //   /// @dev Refund and delete all members
-  //   for (uint256 index = 0; index < membersArray.length; index++) {
-  //     address memberAddress = membersArray[index];
-  //     uint256 amountRefunded = refundUserBalance(memberAddress);
-  //     delete members[memberAddress];
+  function drain() public onlyOwner {
+    /// @dev Refund and delete all members
+    // for (uint256 index = 0; index < membersArray.length; index++) {
+    //   address memberAddress = membersArray[index];
+    //   uint256 amountRefunded = refundUserBalance(memberAddress);
+    //   delete members[memberAddress];
 
-  //     emit MemberRefunded(memberAddress, amountRefunded);
-  //   }
-  //   delete membersArray;
+    //   emit MemberRefunded(memberAddress, amountRefunded);
+    // }
+    // delete membersArray;
 
-  //   /// @dev Refund the pool balance
-  //   require(
-  //     ixtToken.transfer(msg.sender, totalPoolBalance),
-  //     "Unable to withdraw this value of IXT."
-  //   );
-  //   emit PoolBalanceRefunded(msg.sender, totalPoolBalance);
-  //   totalPoolBalance = 0;
+    // /// @dev Refund the pool balance
+    // require(
+    //   ixtToken.transfer(msg.sender, totalPoolBalance),
+    //   "Unable to withdraw this value of IXT."
+    // );
+    // emit PoolBalanceRefunded(msg.sender, totalPoolBalance);
+    // totalPoolBalance = 0;
     
-  //   emit ContractDrained(msg.sender);
-  // }
+    // emit ContractDrained(msg.sender);
+  }
 
   /*      (getter functions)      */
+
+  function getMembersArrayLength() public view returns (uint256) {
+    return membersArray.length;
+  }
 
   function getAccountBalance(address memberAddress)
     public
@@ -402,10 +419,8 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     userIsJoined(memberAddress)
     returns (uint256)
   {
-    return SafeMath.add(
-      getStakeBalance(memberAddress),
-      getRewardBalance(memberAddress)
-    );
+    return getStakeBalance(memberAddress) +
+      getRewardBalance(memberAddress);
   }
 
   function getStakeBalance(address memberAddress)
@@ -423,18 +438,68 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     userIsJoined(memberAddress)
     returns (uint256)
   {
-    /// @dev TODO - Change this to calculate the correct withdraw amount
+    return getInvitationRewardBalance(memberAddress) +
+      getLoyaltyRewardBalance(memberAddress);
+  }
+
+  function getInvitationRewardBalance(address memberAddress)
+    public
+    view
+    userIsJoined(memberAddress)
+    returns (uint256)
+  {
     return members[memberAddress].invitationRewards;
   }
 
-  // /*      (setter functions)      */
+  function getLoyaltyRewardBalance(address memberAddress)
+    public
+    view
+    userIsJoined(memberAddress)
+    returns (uint256 loyaltyReward)
+  {
+    uint256 loyaltyPeriodSeconds = loyaltyPeriodDays * 1 days;
+    Member storage thisMember = members[memberAddress];
+    uint256 elapsedTimeSinceEligible = block.timestamp - thisMember.startOfLoyaltyRewardEligibility;
+    loyaltyReward = thisMember.previouslyAppliedLoyaltyBalance;
+    if (elapsedTimeSinceEligible >= loyaltyPeriodSeconds) {
+      uint256 numWholePeriods = SafeMath.div(elapsedTimeSinceEligible, loyaltyPeriodSeconds);
+      uint256 rewardForEachPeriod = thisMember.stakeBalance * loyaltyRewardPercentage / 100;
+      loyaltyReward += rewardForEachPeriod * numWholePeriods;
+    }
+  }
 
-  // function setInvitationReward(uint256 _invitationReward)
-  //   public
-  //   onlyOwner
-  // {
-  //   invitationReward = _invitationReward;
-  // }
+  /*      (setter functions)      */
+
+  function setInvitationReward(uint256 _invitationReward)
+    public
+    onlyOwner
+  {
+    invitationReward = _invitationReward;
+  }
+
+  function setLoyaltyRewardPercentage(uint256 newLoyaltyRewardPercentage)
+    public
+    onlyOwner
+  {
+    require(
+      newLoyaltyRewardPercentage >= 0 &&
+      newLoyaltyRewardPercentage <= 100,
+      "Loyalty reward percentage must be between 0 and 100."
+    );
+    uint256 loyaltyPeriodSeconds = loyaltyPeriodDays * 1 days;
+    /// @dev Loop through all the current members and apply previous reward amounts
+    for (uint256 i = 0; i < membersArray.length; i++) {
+      Member storage thisMember = members[membersArray[i]];
+      uint256 elapsedTimeSinceEligible = block.timestamp - thisMember.startOfLoyaltyRewardEligibility;
+      if (elapsedTimeSinceEligible >= loyaltyPeriodSeconds) {
+        uint256 numWholePeriods = SafeMath.div(elapsedTimeSinceEligible, loyaltyPeriodSeconds);
+        uint256 rewardForEachPeriod = thisMember.stakeBalance * loyaltyRewardPercentage / 100;
+        thisMember.previouslyAppliedLoyaltyBalance += rewardForEachPeriod * numWholePeriods;
+        thisMember.startOfLoyaltyRewardEligibility += numWholePeriods * loyaltyPeriodSeconds;
+      }
+    }
+    loyaltyRewardPercentage = newLoyaltyRewardPercentage;
+  }
 
   // /*                              */
   // /*      INTERNAL FUNCTIONS      */

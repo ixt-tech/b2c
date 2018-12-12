@@ -1,12 +1,8 @@
 import React from 'react';
 import {
   Modal,
-  Image,
-  Header,
-  Button,
   Form,
-  Label,
-  Input,
+  Button,
 } from 'semantic-ui-react';
 import './styles.css';
 
@@ -28,16 +24,20 @@ class MemberDialog extends React.Component {
   handleChange(event, { name, value }) {
     const member = this.state.member;
     member[name] = value;
+    if(name == 'address' && value.length > 10) {
+      member.invitationCode = value.substring(value.length - 8);
+    }
     this.setState({ member: member });
   }
 
   handleSubmit = async (event) => {
+    const web3 = this.props.web3;
     const contract = this.props.contract;
     const member = this.state.member;
     contract.authoriseUser(
       member.membershipNumber,
-      member.memberAddress,
-      '0x00',
+      member.address,
+      web3.utils.fromAscii(member.invitationCode),
       {from: this.props.account}
     );
 
@@ -50,8 +50,8 @@ class MemberDialog extends React.Component {
   newMember() {
     return {
       membershipNumber: '',
-      memberAddress: '',
-      productsCovered: '',
+      address: '',
+      products: '',
       invitationCode: ''
     };
   }
@@ -65,9 +65,9 @@ class MemberDialog extends React.Component {
         <Modal.Header>{this.state.member.id ? 'Edit' : 'New'} Member</Modal.Header>
         <Modal.Content>
           <Form onSubmit={this.handleSubmit}>
-            <Form.Input placeholder='Address' name='memberAddress' value={this.state.member.memberAddress} onChange={this.handleChange} />
+            <Form.Input placeholder='Wallet address' name='address' value={this.state.member.address} onChange={this.handleChange} />
             <Form.Input placeholder='Membership ID' name='membershipNumber' value={this.state.member.membershipNumber} onChange={this.handleChange} />
-            <Form.Input placeholder='Products' name='productsCovered' value={this.state.member.productsCovered} onChange={this.handleChange} />
+            <Form.Input placeholder='Products' name='products' value={this.state.member.productsCovered} onChange={this.handleChange} />
             <Form.Input placeholder='Invitation Code' name='invitationCode' value={this.state.member.invitationCode} onChange={this.handleChange} />
           </Form>
         </Modal.Content>

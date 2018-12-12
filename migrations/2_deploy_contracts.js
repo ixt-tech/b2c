@@ -21,11 +21,5 @@ module.exports = async function(deployer, network, accounts) {
     loyaltyRewardPercentage,
     ixtStakingLevels
   );
-//  if(network == 'test') {
-   console.log('In test mode, adding the owner as a member...');
-   const contract = await IxtProtect.at(IxtProtect.address);
-   contract.authoriseUser('1', accounts[0], "0xA");
-   contract.authoriseUser('2', accounts[1], "0xB");
-//  }
 
 };

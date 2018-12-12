@@ -39,7 +39,6 @@ class AccountPage extends React.Component {
       Contract.setProvider(web3.currentProvider);
       const contract = await Contract.deployed();
       const member = await contract.members(account);
-
       if(member.membershipNumber.toString() == 0) {
         alert('You are not a member');
       }
@@ -69,7 +68,7 @@ class AccountPage extends React.Component {
           contract={ this.state.contract }
         />
 
-        <InvitationLink member={ this.state.member } />
+        <InvitationLink web3={this.state.web3} member={ this.state.member } />
 
         <TransactionGrid />
       </Container>

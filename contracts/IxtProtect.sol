@@ -73,7 +73,7 @@ contract IxtEvents {
   );
 
   event LoyaltyRewardChanged(
-    uint256 newLoyaltyRewardPercentage
+    uint256 newLoyaltyRewardAmount
   );
 }
 
@@ -125,23 +125,23 @@ contract RewardManager {
   /// @dev the period after which a member gets a loyalty reward
   uint256 public loyaltyPeriodDays;
   /// @dev 
-  uint256 public loyaltyRewardPercentage;
+  uint256 public loyaltyRewardAmount;
 
   /*      Constructor      */
 
   constructor(
     uint256 _invitationReward,
     uint256 _loyaltyPeriodDays,
-    uint256 _loyaltyRewardPercentage
+    uint256 _loyaltyRewardAmount
   ) public {
     require(
-      _loyaltyRewardPercentage >= 0 &&
-      _loyaltyRewardPercentage <= 100,
-      "Loyalty reward percentage must be between 0 and 100."
+      _loyaltyRewardAmount >= 0 &&
+      _loyaltyRewardAmount <= 100,
+      "Loyalty reward amount must be between 0 and 100."
     );
     invitationReward = _invitationReward;
     loyaltyPeriodDays = _loyaltyPeriodDays;
-    loyaltyRewardPercentage = _loyaltyRewardPercentage;
+    loyaltyRewardAmount = _loyaltyRewardAmount;
   }
 
 }
@@ -221,13 +221,13 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     uint256 _loyaltyPeriodDays,
     address _ixtToken,
     uint256 _invitationReward,
-    uint256 _loyaltyRewardPercentage,
+    uint256 _loyaltyRewardAmount,
     uint256[3] memory _ixtStakingLevels
   )
     public
     RoleManager(_validator)
     StakeManager(_ixtStakingLevels)
-    RewardManager(_invitationReward, _loyaltyPeriodDays, _loyaltyRewardPercentage)
+    RewardManager(_invitationReward, _loyaltyPeriodDays, _loyaltyRewardAmount)
   {
     require(_ixtToken != address(0x0), "ixtToken address was set to 0.");
     ixtToken = IERC20(_ixtToken);
@@ -436,7 +436,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     loyaltyReward = thisMember.previouslyAppliedLoyaltyBalance;
     if (elapsedTimeSinceEligible >= loyaltyPeriodSeconds) {
       uint256 numWholePeriods = SafeMath.div(elapsedTimeSinceEligible, loyaltyPeriodSeconds);
-      uint256 rewardForEachPeriod = thisMember.stakeBalance * loyaltyRewardPercentage / 100;
+      uint256 rewardForEachPeriod = thisMember.stakeBalance * loyaltyRewardAmount / 100;
       loyaltyReward += rewardForEachPeriod * numWholePeriods;
     }
   }
@@ -451,14 +451,14 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     emit InvitationRewardChanged(_invitationReward);
   }
 
-  function setLoyaltyRewardPercentage(uint256 newLoyaltyRewardPercentage)
+  function setLoyaltyRewardAmount(uint256 newLoyaltyRewardAmount)
     public
     onlyOwner
   {
     require(
-      newLoyaltyRewardPercentage >= 0 &&
-      newLoyaltyRewardPercentage <= 100,
-      "Loyalty reward percentage must be between 0 and 100."
+      newLoyaltyRewardAmount >= 0 &&
+      newLoyaltyRewardAmount <= 100,
+      "Loyalty reward amount must be between 0 and 100."
     );
     uint256 loyaltyPeriodSeconds = loyaltyPeriodDays * 1 days;
     /// @dev Loop through all the current members and apply previous reward amounts
@@ -467,13 +467,13 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
       uint256 elapsedTimeSinceEligible = block.timestamp - thisMember.startOfLoyaltyRewardEligibility;
       if (elapsedTimeSinceEligible >= loyaltyPeriodSeconds) {
         uint256 numWholePeriods = SafeMath.div(elapsedTimeSinceEligible, loyaltyPeriodSeconds);
-        uint256 rewardForEachPeriod = thisMember.stakeBalance * loyaltyRewardPercentage / 100;
+        uint256 rewardForEachPeriod = thisMember.stakeBalance * loyaltyRewardAmount / 100;
         thisMember.previouslyAppliedLoyaltyBalance += rewardForEachPeriod * numWholePeriods;
         thisMember.startOfLoyaltyRewardEligibility += numWholePeriods * loyaltyPeriodSeconds;
       }
     }
-    loyaltyRewardPercentage = newLoyaltyRewardPercentage;
-    emit LoyaltyRewardChanged(newLoyaltyRewardPercentage);
+    loyaltyRewardAmount = newLoyaltyRewardAmount;
+    emit LoyaltyRewardChanged(newLoyaltyRewardAmount);
   }
 
   /*                              */

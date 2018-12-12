@@ -15,7 +15,7 @@ contract("IXTProtect", (accounts) => {
   const deployer = accounts[0];
   const validator = accounts[1];
   const unusedAccount = accounts[5];
-  const defaultLoyaltyPercentage = "10";
+  const defaultLoyaltyAmount = "10";
   const defaultLoyaltyPeriodDays = "90";
   const memberData = [
     {
@@ -69,7 +69,7 @@ contract("IXTProtect", (accounts) => {
     whenNotPaused: "Cannot call when paused.",
     whenPaused: "Can only call this when paused.",
     isValidStakeLevel: "Is not valid a staking level.",
-    isValidLoyaltyPercentage: "Loyalty reward percentage must be between 0 and 100.",
+    isValidLoyaltyAmount: "Loyalty reward amount must be between 0 and 100.",
     noRewardsToClaim: "You have no rewards to claim.",
     poolBalanceTooLow: "Pool balance not sufficient to withdraw rewards."
   };
@@ -101,7 +101,7 @@ contract("IXTProtect", (accounts) => {
       defaultLoyaltyPeriodDays,
       tokenAddress,
       TokenAmounts.defaultInvitationReward,
-      defaultLoyaltyPercentage,
+      defaultLoyaltyAmount,
       TokenAmounts.stakingLevels,
       { from: deployer }
     ).then(instance => {
@@ -174,12 +174,12 @@ contract("IXTProtect", (accounts) => {
     return TimeHelper.increase(TimeHelper.duration.hours(hoursToPass));
   }
 
-  function getLoyaltyRewardAmount(_stakingAmount, _loyaltyRewardPercentage, _numPeriods) {
+  function getLoyaltyRewardAmount(_stakingAmount, _loyaltyRewardAmount, _numPeriods) {
     const stakingAmount = new BN(_stakingAmount);
-    const percentage = new BN(_loyaltyRewardPercentage);
+    const amount = new BN(_loyaltyRewardAmount);
     const oneHundred = new BN("100");
     const numPeriods = new BN(_numPeriods);
-    return stakingAmount.mul(percentage).div(oneHundred).mul(numPeriods).toString();
+    return stakingAmount.mul(amount).div(oneHundred).mul(numPeriods).toString();
   }
   function toIXT(inputString) {
     const input = new BN(inputString);
@@ -236,22 +236,22 @@ contract("IXTProtect", (accounts) => {
       assert.equal(invitationReward, TokenAmounts.defaultInvitationReward);
     });
 
-    it("loyaltyRewardPercentage should be correct.", async () => {
-      const loyaltyRewardPercentage =  await ixtProtect.loyaltyRewardPercentage();
-      assert.equal(loyaltyRewardPercentage.toString(), defaultLoyaltyPercentage);
+    it("loyaltyRewardAmount should be correct.", async () => {
+      const loyaltyRewardAmount =  await ixtProtect.loyaltyRewardAmount();
+      assert.equal(loyaltyRewardAmount.toString(), defaultLoyaltyAmount);
     });
 
-    it("should not allow loyaltyRewardPercentage that is too high.", async () => {
-      await expectRevert(deploy(-1), ErrorReasons.isValidLoyaltyPercentage);
-      await expectRevert(deploy(101), ErrorReasons.isValidLoyaltyPercentage);
-      await expectRevert(deploy(41322131), ErrorReasons.isValidLoyaltyPercentage);
-      function deploy(testPercentage) {
+    it("should not allow loyaltyRewardAmount that is too high.", async () => {
+      await expectRevert(deploy(-1), ErrorReasons.isValidLoyaltyAmount);
+      await expectRevert(deploy(101), ErrorReasons.isValidLoyaltyAmount);
+      await expectRevert(deploy(41322131), ErrorReasons.isValidLoyaltyAmount);
+      function deploy(testAmount) {
         return IxtProtect.new(
           validator,
           defaultLoyaltyPeriodDays,
           ixtTokenAddress,
           TokenAmounts.defaultInvitationReward,
-          testPercentage,
+          testAmount,
           TokenAmounts.stakingLevels,
           { from: deployer }
         );
@@ -444,7 +444,7 @@ contract("IXTProtect", (accounts) => {
       await passTimeinDays("200");
       const numPeriods = "2";
       let rewardBalance = await ixtProtect.getRewardBalance(memberData[0].memberAddress);
-      expectedReward = (parseInt(getLoyaltyRewardAmount(TokenAmounts.stakingLevels[LOW], defaultLoyaltyPercentage, numPeriods)) +
+      expectedReward = (parseInt(getLoyaltyRewardAmount(TokenAmounts.stakingLevels[LOW], defaultLoyaltyAmount, numPeriods)) +
         + parseInt(expectedReward)).toString();
       assert.equal(rewardBalance, expectedReward);
     });
@@ -492,13 +492,13 @@ contract("IXTProtect", (accounts) => {
         await passTimeinHours("1");
         const numPeriods = "1";
         let rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
-        assert.equal(rewardBalance, getLoyaltyRewardAmount(TokenAmounts.stakingLevels[LOW], defaultLoyaltyPercentage, numPeriods));
+        assert.equal(rewardBalance, getLoyaltyRewardAmount(TokenAmounts.stakingLevels[LOW], defaultLoyaltyAmount, numPeriods));
       });
       it("should get correct loyalty rewards after 200 days.", async () => {
         await passTimeinDays("200");
         const numPeriods = "2";
         let rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
-        assert.equal(rewardBalance, getLoyaltyRewardAmount(TokenAmounts.stakingLevels[LOW], defaultLoyaltyPercentage, numPeriods));
+        assert.equal(rewardBalance, getLoyaltyRewardAmount(TokenAmounts.stakingLevels[LOW], defaultLoyaltyAmount, numPeriods));
       });
       it("should get correct loyalty in a more complex scenario where rewards are changed.", async () => {
         const stakeLevel = TokenAmounts.stakingLevels[LOW];
@@ -507,18 +507,18 @@ contract("IXTProtect", (accounts) => {
         let numPeriodsSinceRewardChanged = numPeriodsSinceJoin;
 
         let rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
-        assert.equal(rewardBalance, getLoyaltyRewardAmount(stakeLevel, defaultLoyaltyPercentage, numPeriodsSinceJoin));
+        assert.equal(rewardBalance, getLoyaltyRewardAmount(stakeLevel, defaultLoyaltyAmount, numPeriodsSinceJoin));
 
         await passTimeinDays("200"); // 3 Periods passed since join (300 days total)
         numPeriodsSinceJoin = "3";
         numPeriodsSinceRewardChanged = numPeriodsSinceJoin;
 
         rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
-        let expectedRewardUntilNow = getLoyaltyRewardAmount(stakeLevel, defaultLoyaltyPercentage, numPeriodsSinceJoin);
+        let expectedRewardUntilNow = getLoyaltyRewardAmount(stakeLevel, defaultLoyaltyAmount, numPeriodsSinceJoin);
         assert.equal(rewardBalance, expectedRewardUntilNow);
 
-        let newLoyaltyRewardPercentage = "20";
-        await ixtProtect.setLoyaltyRewardPercentage(newLoyaltyRewardPercentage, { from: deployer });
+        let newLoyaltyRewardAmount = "20";
+        await ixtProtect.setLoyaltyRewardAmount(newLoyaltyRewardAmount, { from: deployer });
         numPeriodsSinceRewardChanged = "0";
 
         rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
@@ -529,7 +529,7 @@ contract("IXTProtect", (accounts) => {
         numPeriodsSinceRewardChanged = "2";
 
         rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
-        let expectedRewardSinceUpdated = getLoyaltyRewardAmount(stakeLevel, newLoyaltyRewardPercentage, numPeriodsSinceRewardChanged);
+        let expectedRewardSinceUpdated = getLoyaltyRewardAmount(stakeLevel, newLoyaltyRewardAmount, numPeriodsSinceRewardChanged);
         expectedRewardUntilNow = new BN(expectedRewardUntilNow) .add(new BN(expectedRewardSinceUpdated));
         assert.equal(rewardBalance.toString(), expectedRewardUntilNow.toString());
 
@@ -538,11 +538,11 @@ contract("IXTProtect", (accounts) => {
         numPeriodsSinceRewardChanged = "3";
 
         rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
-        expectedRewardUntilNow = expectedRewardUntilNow.add(new BN(getLoyaltyRewardAmount(stakeLevel, newLoyaltyRewardPercentage, "1")));
+        expectedRewardUntilNow = expectedRewardUntilNow.add(new BN(getLoyaltyRewardAmount(stakeLevel, newLoyaltyRewardAmount, "1")));
         assert.equal(rewardBalance.toString(), expectedRewardUntilNow.toString());
 
-        newLoyaltyRewardPercentage = "50";
-        await ixtProtect.setLoyaltyRewardPercentage(newLoyaltyRewardPercentage, { from: deployer });
+        newLoyaltyRewardAmount = "50";
+        await ixtProtect.setLoyaltyRewardAmount(newLoyaltyRewardAmount, { from: deployer });
 
         rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
         assert.equal(rewardBalance.toString(), expectedRewardUntilNow.toString());
@@ -552,7 +552,7 @@ contract("IXTProtect", (accounts) => {
         numPeriodsSinceRewardChanged = "1";
 
         rewardBalance = await ixtProtect.getLoyaltyRewardBalance(memberData[0].memberAddress);
-        expectedRewardUntilNow = expectedRewardUntilNow.add(new BN(getLoyaltyRewardAmount(stakeLevel, newLoyaltyRewardPercentage, "1")));
+        expectedRewardUntilNow = expectedRewardUntilNow.add(new BN(getLoyaltyRewardAmount(stakeLevel, newLoyaltyRewardAmount, "1")));
         assert.equal(rewardBalance.toString(), expectedRewardUntilNow.toString());
       });
     });
@@ -757,7 +757,7 @@ contract("IXTProtect", (accounts) => {
         });
       });
     });
-    describe.only("when called by the contract owner", () => {
+    describe("when called by the contract owner", () => {
       beforeEach(async () => {
         await prepContracts(memberData[0], TokenAmounts.stakingLevels[HIGH], TokenAmounts.stakingLevels[HIGH], true);
       });
@@ -825,18 +825,18 @@ contract("IXTProtect", (accounts) => {
       );
     });
   });
-  describe("setLoyaltyRewardPercentage function", () => {
-    const newRewardPercentage = "42";
+  describe("setLoyaltyRewardAmount function", () => {
+    const newRewardAmount = "42";
     it("should work when called by the owner account.", async () => {
-      const oldRewardPercentage =  await ixtProtect.loyaltyRewardPercentage();
-      assert.equal(oldRewardPercentage, defaultLoyaltyPercentage);
-      await ixtProtect.setLoyaltyRewardPercentage(newRewardPercentage, { from: deployer });
-      const loyaltyRewardPercentage =  await ixtProtect.loyaltyRewardPercentage();
-      assert.equal(loyaltyRewardPercentage, newRewardPercentage);
+      const oldRewardAmount =  await ixtProtect.loyaltyRewardAmount();
+      assert.equal(oldRewardAmount, defaultLoyaltyAmount);
+      await ixtProtect.setLoyaltyRewardAmount(newRewardAmount, { from: deployer });
+      const loyaltyRewardAmount =  await ixtProtect.loyaltyRewardAmount();
+      assert.equal(loyaltyRewardAmount, newRewardAmount);
     });
     it("should revert with correct message if not called by owner account.", async () => {
       await expectRevert(
-        ixtProtect.setLoyaltyRewardPercentage(newRewardPercentage, { from: memberData[0].memberAddress }),
+        ixtProtect.setLoyaltyRewardAmount(newRewardAmount, { from: memberData[0].memberAddress }),
         ErrorReasons.onlyOwner 
       );
     });

@@ -736,75 +736,75 @@ contract("IXTProtect", (accounts) => {
   describe("Pause and Unpause functions", () => {
     describe("when not called by the contract owner", () => {
       beforeEach(async () => {
-        // await prepContracts(memberData[0], TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, true);
-        // await ixtProtect.join({ from: memberData[0].memberAddress });
+        await prepContracts(memberData[0], TokenAmounts.stakingLevels[HIGH], TokenAmounts.stakingLevels[HIGH], true);
+        await ixtProtect.join(HIGH, zeroedBytes32, { from: memberData[0].memberAddress } );
       });
       describe("when pause is called", () => {
         it("should revert with the correct message.", async () => {
-          // await expectRevert(
-          //   ixtProtect.pause({ from: memberData[0].memberAddress }),
-          //   ErrorReasons.onlyPauser 
-          // );
+          await expectRevert(
+            ixtProtect.pause({ from: memberData[0].memberAddress }),
+            ErrorReasons.onlyPauser 
+          );
         });
       });
       describe("when unpause is called", () => {
         it("should revert with the correct message.", async () => {
-          // await ixtProtect.pause({ from: deployer });
-          // await expectRevert(
-          //   ixtProtect.unpause({ from: memberData[0].memberAddress }),
-          //   ErrorReasons.onlyPauser 
-          // );
+          await ixtProtect.pause({ from: deployer });
+          await expectRevert(
+            ixtProtect.unpause({ from: memberData[0].memberAddress }),
+            ErrorReasons.onlyPauser 
+          );
         });
       });
     });
-    describe("when called by the contract owner", () => {
+    describe.only("when called by the contract owner", () => {
       beforeEach(async () => {
-        // await prepContracts(memberData[0], TokenAmounts.overMinimumStake, TokenAmounts.overMinimumStake, true);
+        await prepContracts(memberData[0], TokenAmounts.stakingLevels[HIGH], TokenAmounts.stakingLevels[HIGH], true);
       });
       describe("when pause is called", () => {
         it("should pause join function.", async () => {
-          // await ixtProtect.pause({ from: deployer });
-          // await expectRevert(
-          //   ixtProtect.join({ from: memberData[0].memberAddress }),
-          //   ErrorReasons.whenNotPaused 
-          // );
+          await ixtProtect.pause({ from: deployer });
+          await expectRevert(
+            ixtProtect.join(HIGH, zeroedBytes32, { from: memberData[0].memberAddress } ),
+            ErrorReasons.whenNotPaused 
+          );
         });
         it("should not pause any other functions.", async () => {
-          // await ixtProtect.join({ from: memberData[0].memberAddress }),
-          // await ixtProtect.pause({ from: deployer });
-          // await authoriseUser(ixtProtect, memberData[1], validator);
-          // await ixtProtect.removeMember(memberData[0].memberAddress, { from: deployer });
-          // await ixtProtect.depositPool("42", { from: deployer });
-          // await ixtProtect.withdrawPool("42", { from: deployer });
-          // await ixtProtect.drain({ from: deployer });
+          await ixtProtect.join(HIGH, zeroedBytes32, { from: memberData[0].memberAddress } );
+          await ixtProtect.pause({ from: deployer });
+          await authoriseUser(ixtProtect, memberData[1], validator);
+          await ixtProtect.removeMember(memberData[0].memberAddress, { from: deployer });
+          await ixtProtect.depositPool("42", { from: deployer });
+          await ixtProtect.withdrawPool("42", { from: deployer });
+          await ixtProtect.drain({ from: deployer });
         });
         it("should revert with the correct message if pause is called again.", async () => {
-          // await ixtProtect.pause({ from: deployer });
-          // await expectRevert(
-          //   ixtProtect.pause({ from: deployer }),
-          //   ErrorReasons.whenNotPaused 
-          // );
+          await ixtProtect.pause({ from: deployer });
+          await expectRevert(
+            ixtProtect.pause({ from: deployer }),
+            ErrorReasons.whenNotPaused 
+          );
         });
       });
       describe("when unpause is called", () => {
         it("should revert with the correct message if not already paused.", async () => {
-          // await expectRevert(
-          //   ixtProtect.unpause({ from: deployer }),
-          //   ErrorReasons.whenPaused 
-          // );
+          await expectRevert(
+            ixtProtect.unpause({ from: deployer }),
+            ErrorReasons.whenPaused 
+          );
         });
         it("should revert with the correct message if unpause is called again.", async () => {
-          // await ixtProtect.pause({ from: deployer });
-          // await ixtProtect.unpause({ from: deployer });
-          // await expectRevert(
-          //   ixtProtect.unpause({ from: deployer }),
-          //   ErrorReasons.whenPaused 
-          // );
+          await ixtProtect.pause({ from: deployer });
+          await ixtProtect.unpause({ from: deployer });
+          await expectRevert(
+            ixtProtect.unpause({ from: deployer }),
+            ErrorReasons.whenPaused 
+          );
         });
         it("should unpause join function.", async () => {
-          // await ixtProtect.pause({ from: deployer });
-          // await ixtProtect.unpause({ from: deployer });
-          // await ixtProtect.join({ from: memberData[0].memberAddress });
+          await ixtProtect.pause({ from: deployer });
+          await ixtProtect.unpause({ from: deployer });
+          await ixtProtect.join(HIGH, zeroedBytes32, { from: memberData[0].memberAddress } );
         });
       });
     });

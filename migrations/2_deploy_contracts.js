@@ -6,7 +6,7 @@ module.exports = async function(deployer, network, accounts) {
   const loyaltyPeriod = "90";
   /// 200 IXT for all rewards
   const invitationReward = "20000000000";
-  const loyaltyRewardPercentage = "10";
+  const loyaltyRewardAmount = "10";
   const ixtStakingLevels = [
     "100000000000",  //  1000 IXT
     "500000000000",  //  5000 IXT
@@ -18,14 +18,14 @@ module.exports = async function(deployer, network, accounts) {
     loyaltyPeriod,
     IXTTokenAddress,
     invitationReward,
-    loyaltyRewardPercentage,
+    loyaltyRewardAmount,
     ixtStakingLevels
   );
-//  if(network == 'test') {
-   console.log('In test mode, adding the owner as a member...');
-   const contract = await IxtProtect.at(IxtProtect.address);
-   contract.authoriseUser('1', accounts[0], "0xA");
-   contract.authoriseUser('2', accounts[1], "0xB");
-//  }
+  if(network == "test") {
+    console.log("In test mode, adding the owner as a member...");
+    const contract = await IxtProtect.at(IxtProtect.address);
+    contract.authoriseUser("1", accounts[0], "0xA");
+    contract.authoriseUser("2", accounts[1], "0xB");
+  }
 
 };

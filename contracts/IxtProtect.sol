@@ -8,29 +8,34 @@ import "./lib/ValidatorRole.sol";
 
 contract IxtEvents {
 
-  event Authorised(
+  event NewMemberAuthorised(
     address memberAddress,
-    uint256 membershipNumber
+    uint256 membershipNumber,
+    bytes32 invitationCode,
+    uint256 authorisedTimestamp
   );
 
-  event Joined(
+  event NewMemberJoined(
     address memberAddress,
-    uint256 membershipNumber
+    uint256 membershipNumber,
+    uint256 stakeLevel,
+    uint256 joinedTimestamp
   );
 
-  event Deposited(
-    address memberAddress,
-    uint256 amountDeposited    
+  event MemberInitiatedCancelMembership(
+    address memberThatCancelled,
+    uint256 rewardAmount
   );
 
-  event Withdrawn(
-    address memberAddress,
-    uint256 amountWithdrawn
+  event MemberInitiatedClaimRewards(
+    address member,
+    uint256 rewardAmount
   );
 
-  event MemberCancelled(
-    address memberAddress,
-    uint256 amountRefunded
+  event InvitationRewardGiven(
+    address memberReceivingReward,
+    address memberGivingReward,
+    uint256 rewardAmount
   );
 
   event PoolDeposit(
@@ -38,12 +43,23 @@ contract IxtEvents {
     uint256 amount
   );
 
-  event MemberRefunded(
+  event PoolWithdraw(
+    address withdrawer,
+    uint256 amount
+  );
+
+  event AdminRemovedMember(
+    address admin,
+    address userAddress,
+    uint256 refundIssued
+  );
+
+  event MemberDrained(
     address memberAddress,
     uint256 amountRefunded
   );
 
-  event PoolBalanceRefunded(
+  event PoolDrained(
     address refundRecipient,
     uint256 amountRefunded
   );
@@ -52,6 +68,13 @@ contract IxtEvents {
     address drainInitiator
   );
 
+  event InvitationRewardChanged(
+    uint256 newInvitationReward
+  );
+
+  event LoyaltyRewardChanged(
+    uint256 newLoyaltyRewardPercentage
+  );
 }
 
 contract RoleManager is Ownable, Pausable, ValidatorRole {
@@ -122,27 +145,6 @@ contract RewardManager {
   }
 
 }
-
-// contract IxtProtectInterface {
-//   /*      (member functions)      */
-//   [x] function join(uint8 _stakeLevel, bytes32 invitationCodeToClaim) public;
-//   [T] function cancelMembership() public;
-//   [T] function claimRewards() public;
-//   [x] function getMembersArrayLength() public view returns (uint256);
-//   [x] function getAccountBalance(address memberAddress) public view returns (uint256);
-//   [x] function getStakeBalance(address memberAddress) public view returns (uint256);
-//   [T] function getRewardBalance(address memberAddress) public view returns (uint256);
-//   [x] function getInvitationRewardBalance(address memberAddress) public view returns (uint256);
-//   [x] function getLoyaltyRewardBalance(address memberAddress) public view returns (uint256);
-//   /*      (admin functions)      */
-//   [x] function authoriseUser(uint256 _membershipNumber, address _memberAddress, bytes32 _invitationCode) public;
-//   [x] function depositPool(uint256 amountToDeposit) public;
-//   [x] function withdrawPool(uint256 amountToWithdraw) public;
-//   [T] function removeMember(address userAddress) public;
-//   [x] function setInvitationReward(uint256 _invitationReward) public
-//   [x] function setLoyaltyRewardPercentage(uint256 loyaltyRewardPercentage) public;
-//   [T] function drain() public;
-// }
 
 contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
 
@@ -267,7 +269,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     });
     members[_memberAddress] = member;
     membersArray.push(_memberAddress);
-    emit Authorised(_memberAddress, _membershipNumber);
+    emit NewMemberAuthorised(_memberAddress, _membershipNumber, _invitationCode, block.timestamp);
   }
 
   /// @notice Called by a member once they have been approved to join the scheme
@@ -281,7 +283,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     userNotJoined(msg.sender)
     isValidStakeLevel(_stakeLevel)
   {
-    depositInternal(msg.sender, ixtStakingLevels[uint256(_stakeLevel)], false);
+    uint256 amountDeposited = depositInternal(msg.sender, ixtStakingLevels[uint256(_stakeLevel)], false);
     Member storage member = members[msg.sender];
     member.joinedTimestamp = block.timestamp;
     member.startOfLoyaltyRewardEligibility = block.timestamp;
@@ -295,8 +297,9 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     ) {
       Member storage rewardee = members[rewardMemberAddress];
       rewardee.invitationRewards = SafeMath.add(rewardee.invitationRewards, invitationReward);
+      emit InvitationRewardGiven(rewardMemberAddress, msg.sender, invitationReward);
     }
-    emit Joined(msg.sender, member.membershipNumber);
+    emit NewMemberJoined(msg.sender, member.membershipNumber, amountDeposited, block.timestamp);
   }
 
   function cancelMembership()
@@ -304,7 +307,8 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     whenNotPaused()
     userIsJoined(msg.sender)
   {
-    cancelMembershipInternal(msg.sender);
+    uint256 refund = cancelMembershipInternal(msg.sender);
+    emit MemberInitiatedCancelMembership(msg.sender, refund);
   }
 
   function claimRewards()
@@ -312,7 +316,8 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     whenNotPaused()
     userIsJoined(msg.sender)
   {
-    claimRewardsInternal(msg.sender);
+    uint256 rewardClaimed = claimRewardsInternal(msg.sender);
+    emit MemberInitiatedClaimRewards(msg.sender, rewardClaimed);
   }
 
   /*      (admin functions)      */
@@ -321,7 +326,8 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     public
     onlyOwner
   {
-    depositInternal(msg.sender, amountToDeposit, true);
+    uint256 amountDeposited = depositInternal(msg.sender, amountToDeposit, true);
+    emit PoolDeposit(msg.sender, amountDeposited);
   }
 
   function withdrawPool(uint256 amountToWithdraw)
@@ -336,6 +342,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
       );
       totalPoolBalance = SafeMath.sub(totalPoolBalance, amountToWithdraw);
     }
+    emit PoolWithdraw(msg.sender, amountToWithdraw);
   }
 
   /// @dev Can be called if user is authorised or joined
@@ -344,19 +351,21 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     userIsAuthorised(userAddress)
     onlyOwner
   {
-    cancelMembershipInternal(userAddress);
+    uint256 refund = cancelMembershipInternal(userAddress);
+    emit AdminRemovedMember(msg.sender, userAddress, refund);
   }
 
   function drain() public onlyOwner {
     /// @dev Refund and delete all members
     for (uint256 index = 0; index < membersArray.length; index++) {
       address memberAddress = membersArray[index];
-      uint256 amountRefunded = refundUserBalance(memberAddress);
+      bool memberJoined = members[memberAddress].joinedTimestamp != 0;
+      uint256 amountRefunded = memberJoined ? refundUserBalance(memberAddress) : 0;
 
       delete registeredInvitationCodes[members[memberAddress].invitationCode];
       delete members[memberAddress];
 
-      emit MemberRefunded(memberAddress, amountRefunded);
+      emit MemberDrained(memberAddress, amountRefunded);
     }
     delete membersArray;
 
@@ -365,8 +374,8 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
       ixtToken.transfer(msg.sender, totalPoolBalance),
       "Unable to withdraw this value of IXT."
     );
-    emit PoolBalanceRefunded(msg.sender, totalPoolBalance);
     totalPoolBalance = 0;
+    emit PoolDrained(msg.sender, totalPoolBalance);
     
     emit ContractDrained(msg.sender);
   }
@@ -439,6 +448,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     onlyOwner
   {
     invitationReward = _invitationReward;
+    emit InvitationRewardChanged(_invitationReward);
   }
 
   function setLoyaltyRewardPercentage(uint256 newLoyaltyRewardPercentage)
@@ -463,22 +473,25 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
       }
     }
     loyaltyRewardPercentage = newLoyaltyRewardPercentage;
+    emit LoyaltyRewardChanged(newLoyaltyRewardPercentage);
   }
 
   /*                              */
   /*      INTERNAL FUNCTIONS      */
   /*                              */
 
-  function cancelMembershipInternal(address memberAddress) internal {
-    uint256 amountRefunded = refundUserBalance(memberAddress);
+  function cancelMembershipInternal(address memberAddress)
+    internal
+    returns
+    (uint256 amountRefunded)
+  {
+    amountRefunded = refundUserBalance(memberAddress);
 
     delete registeredInvitationCodes[members[memberAddress].invitationCode];
 
     delete members[memberAddress];
 
     removeMemberFromArray(memberAddress);
-    
-    emit MemberCancelled(memberAddress, amountRefunded);
   }
 
   function refundUserBalance(
@@ -509,6 +522,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     for (uint256 index; index < membersArray.length; index++) {
       if (membersArray[index] == memberAddress) {
         membersArray[index] = membersArray[membersArray.length - 1];
+        membersArray[membersArray.length - 1] = address(0);
         membersArray.length -= 1;
         break;
       }
@@ -554,6 +568,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     bool isPoolDeposit
   ) 
     internal
+    returns (uint256)
   {
     /// @dev Explicitly checking allowance & balance before transferFrom
     /// so we get the revert message.
@@ -566,14 +581,11 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     );
     if (isPoolDeposit) {
       totalPoolBalance = SafeMath.add(totalPoolBalance, amount);
-
-      emit PoolDeposit(depositer, amount);
     } else {
       Member storage member = members[depositer];
       member.stakeBalance = SafeMath.add(member.stakeBalance, amount);
       totalMemberBalance = SafeMath.add(totalMemberBalance, amount);
-
-      emit Deposited(depositer, amount);
     }
+    return amount;
   }
 }

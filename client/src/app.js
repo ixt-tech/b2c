@@ -17,6 +17,11 @@ const AccountPage = Loadable({
   loading: Loading,
 });
 
+const TestPage = Loadable({
+  loader: () => import('./modules/test-page'),
+  loading: Loading,
+});
+
 class App extends Component {
 
   render() {
@@ -27,6 +32,7 @@ class App extends Component {
           <Switch>
             <Route path="/account" component={AccountPage} />
             <Route path="/admin" component={AdminPage} />
+            <Route path="/test" component={TestPage} />
           </Switch>
         </Router>
       </div>

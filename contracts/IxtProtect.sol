@@ -355,7 +355,6 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
 
       delete registeredInvitationCodes[members[memberAddress].invitationCode];
       delete members[memberAddress];
-      removeMemberFromArray(memberAddress);
 
       emit MemberRefunded(memberAddress, amountRefunded);
     }

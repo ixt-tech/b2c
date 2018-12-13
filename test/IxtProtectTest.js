@@ -19,17 +19,17 @@ contract("IXTProtect", (accounts) => {
   const defaultLoyaltyPeriodDays = "90";
   const memberData = [
     {
-      membershipNumber: "123123123",
+      membershipNumber: "0xab12300000000000000000000000000000000000000000000000000000000000",
       memberAddress: accounts[2],
       invitationCode: "0xab00000000000000000000000000000000000000000000000000000000000000"
     },
     {
-      membershipNumber: "98876589997",
+      membershipNumber: "0xab45600000000000000000000000000000000000000000000000000000000000",
       memberAddress: accounts[3],
       invitationCode: "0xcd00000000000000000000000000000000000000000000000000000000000000"
     },
     {
-      membershipNumber: "977665766565765765",
+      membershipNumber: "0xab78900000000000000000000000000000000000000000000000000000000000",
       memberAddress: accounts[4],
       invitationCode: "0xdeadbeef00000000000000000000000000000000000000000000000000000000"
     }
@@ -753,7 +753,7 @@ contract("IXTProtect", (accounts) => {
         expectThrow(ixtProtect.membersArray("0"));
         assert.equal(removedMember.authorisedTimestamp.toString(), "0");
         assert.equal(removedMember.joinedTimestamp.toString(), "0");
-        assert.equal(removedMember.membershipNumber.toString(), "0");
+        assert.equal(removedMember.membershipNumber.toString(), zeroedBytes32);
         assert.equal(removedMember.invitationCode.toString(), zeroedBytes32);
       });
       it("should refund all stake and reward balance back to the removed user, but other balances remain the same.", async () => {
@@ -836,7 +836,7 @@ contract("IXTProtect", (accounts) => {
           expectThrow(ixtProtect.membersArray("0"));
           assert.equal(removedMember.authorisedTimestamp.toString(), "0");
           assert.equal(removedMember.joinedTimestamp.toString(), "0");
-          assert.equal(removedMember.membershipNumber.toString(), "0");
+          assert.equal(removedMember.membershipNumber.toString(), zeroedBytes32);
           assert.equal(removedMember.invitationCode.toString(), zeroedBytes32);
         }
       });

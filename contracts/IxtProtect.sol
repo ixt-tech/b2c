@@ -12,14 +12,14 @@ contract IxtEvents {
 
   event NewMemberAuthorised(
     address memberAddress,
-    uint256 membershipNumber,
+    bytes32 membershipNumber,
     bytes32 invitationCode,
     uint256 authorisedTimestamp
   );
 
   event NewMemberJoined(
     address memberAddress,
-    uint256 membershipNumber,
+    bytes32 membershipNumber,
     uint256 stakeLevel,
     uint256 joinedTimestamp
   );
@@ -206,7 +206,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     uint256 authorisedTimestamp;
     uint256 joinedTimestamp;
     uint256 startOfLoyaltyRewardEligibility;
-    uint256 membershipNumber;
+    bytes32 membershipNumber;
     bytes32 invitationCode;
     uint256 stakeBalance;
     uint256 invitationRewards;
@@ -274,7 +274,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   /// @param _memberAddress the EOA address of the member to authorise
   /// @param _invitationCode should be associated with *this* member in order to apply invitation rewards
   function authoriseUser(
-    uint256 _membershipNumber,
+    bytes32 _membershipNumber,
     address _memberAddress,
     bytes32 _invitationCode
   ) 

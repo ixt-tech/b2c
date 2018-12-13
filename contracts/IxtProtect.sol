@@ -273,10 +273,13 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   /// @param _membershipNumber the membership number of the member to authorise
   /// @param _memberAddress the EOA address of the member to authorise
   /// @param _invitationCode should be associated with *this* member in order to apply invitation rewards
+  /// @param _referralInvitationCode the invitation code of another member which is used to give the
+
   function authoriseUser(
     bytes32 _membershipNumber,
     address _memberAddress,
-    bytes32 _invitationCode
+    bytes32 _invitationCode,
+    bytes32 _referralInvitationCode
   ) 
     public
     onlyValidator
@@ -299,6 +302,19 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     });
     members[_memberAddress] = member;
     membersArray.push(_memberAddress);
+
+    /// @dev add this members invitation code to the mapping
+    registeredInvitationCodes[member.invitationCode] = _memberAddress;
+    /// @dev if the _referralInvitationCode is already registered, add on reward
+    address rewardMemberAddress = registeredInvitationCodes[_referralInvitationCode];
+    if (
+      rewardMemberAddress != address(0x0)
+    ) {
+      Member storage rewardee = members[rewardMemberAddress];
+      rewardee.invitationRewards = SafeMath.add(rewardee.invitationRewards, invitationReward);
+      emit InvitationRewardGiven(rewardMemberAddress, _memberAddress, invitationReward);
+    }
+
     emit NewMemberAuthorised(_memberAddress, _membershipNumber, _invitationCode, block.timestamp);
   }
 
@@ -306,11 +322,9 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   /// @notice Before calling the prospective member *must* have approved the appropriate amount of
   /// IXT token to be transferred by this contract
   /// @param _stakeLevel the staking level used by this member. Note this is not the staking *amount*.
-  /// @param invitationCodeToClaim the invitation code of another member which is used to give the
   /// other member a reward upon *this* user joining.
   function join(
-    StakeLevel _stakeLevel,
-    bytes32 invitationCodeToClaim
+    StakeLevel _stakeLevel
   )
     public
     whenNotPaused()
@@ -322,18 +336,6 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     Member storage member = members[msg.sender];
     member.joinedTimestamp = block.timestamp;
     member.startOfLoyaltyRewardEligibility = block.timestamp;
-    /// @dev add this members invitation code to the mapping
-    registeredInvitationCodes[member.invitationCode] = msg.sender;
-    /// @dev if the invitationCodeToClaim is already registered, add on reward
-    address rewardMemberAddress = registeredInvitationCodes[invitationCodeToClaim];
-    if (
-      rewardMemberAddress != address(0x0) &&
-      members[rewardMemberAddress].joinedTimestamp != 0
-    ) {
-      Member storage rewardee = members[rewardMemberAddress];
-      rewardee.invitationRewards = SafeMath.add(rewardee.invitationRewards, invitationReward);
-      emit InvitationRewardGiven(rewardMemberAddress, msg.sender, invitationReward);
-    }
     emit NewMemberJoined(msg.sender, member.membershipNumber, amountDeposited, block.timestamp);
   }
 

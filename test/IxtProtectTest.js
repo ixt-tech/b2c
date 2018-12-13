@@ -594,7 +594,7 @@ contract("IXTProtect", (accounts) => {
       
       await passTimeinDays("100"); // 1 Period passed since join (100 days total)
 
-      const beforeBalances = await recordBastakeLevellances(memberData[0].memberAddress);
+      const beforeBalances = await recordBalances(memberData[0].memberAddress);
 
       const loyaltyAmount = await getLoyaltyRewardAmount(TokenAmounts.stakingLevels[LOW], defaultLoyaltyAmount, "1");
       expectedRefund = expectedRefund.add(new BN(loyaltyAmount));
@@ -609,7 +609,7 @@ contract("IXTProtect", (accounts) => {
     });
   });
 
-  describe.only("ClaimRewards function", () => {
+  describe("ClaimRewards function", () => {
     beforeEach(async () => {
       await prepContracts(memberData[0], toIXT("10000000000000"), toIXT("10000000000000"), true);
       await ixtProtect.join(HIGH, zeroedBytes32, { from: memberData[0].memberAddress } );

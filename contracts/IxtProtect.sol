@@ -6,6 +6,8 @@ import "./lib/SafeMath.sol";
 import "./lib/Pausable.sol";
 import "./lib/ValidatorRole.sol";
 
+/// @title IxtEvents
+/// @notice Holds all events used by the IXTProtect contract
 contract IxtEvents {
 
   event NewMemberAuthorised(
@@ -77,6 +79,8 @@ contract IxtEvents {
   );
 }
 
+/// @title RoleManager which inherits the Role-based functionality used
+/// by the IXTProtect contract
 contract RoleManager is Ownable, Pausable, ValidatorRole {
 
   constructor(address validator)
@@ -85,6 +89,8 @@ contract RoleManager is Ownable, Pausable, ValidatorRole {
   {}
 }
 
+/// @title StakeManager which contains some of the stake-based state
+/// used by the IXTProtect contract
 contract StakeManager {
 
   /*      Function modifiers      */
@@ -99,6 +105,8 @@ contract StakeManager {
 
   /*      Data types      */
 
+  /// @dev The three levels of stake used within the IXTProtect platform
+  /// @dev Solidity enums are 0 based
   enum StakeLevel { LOW, MEDIUM, HIGH }
 
   /*      Variable declarations      */
@@ -108,6 +116,8 @@ contract StakeManager {
 
   /*      Constructor      */
 
+  /// @param _ixtStakingLevels the amount of stake used for each of the staking levels
+  /// used within the IXTProtect platform
   constructor(
     uint256[3] memory _ixtStakingLevels
   ) public {
@@ -116,6 +126,8 @@ contract StakeManager {
 
 }
 
+/// @title RewardManager which contains some of the reward-based state
+/// used by the IXTProtect contract
 contract RewardManager {
 
   /*      Variable declarations      */
@@ -124,11 +136,14 @@ contract RewardManager {
   uint256 public invitationReward;
   /// @dev the period after which a member gets a loyalty reward
   uint256 public loyaltyPeriodDays;
-  /// @dev 
+  /// @dev the rate used for calculation of the loyalty reward
   uint256 public loyaltyRewardAmount;
 
   /*      Constructor      */
 
+  /// @param _invitationReward the amount of reward used when a member uses an invitation code
+  /// @param _loyaltyPeriodDays the amount of days that will be used for the loyalty period
+  /// @param _loyaltyRewardAmount the rate used as a loyalty reward after every loyalty period
   constructor(
     uint256 _invitationReward,
     uint256 _loyaltyPeriodDays,
@@ -146,6 +161,8 @@ contract RewardManager {
 
 }
 
+/// @title IxtProtect
+/// @notice Holds state and contains key logic which controls the IXTProtect platform
 contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
 
   /*      Function modifiers      */
@@ -184,6 +201,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
 
   /*      Data types      */
 
+  /// @dev data structure used to track state on each member using the platform
   struct Member {
     uint256 authorisedTimestamp;
     uint256 joinedTimestamp;
@@ -212,10 +230,18 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
  
 
   /*      Constants      */
+
+  /// @dev the amount of decimals used by the IXT ERC20 token
   uint256 public constant IXT_DECIMALS = 8;
 
   /*      Constructor      */
 
+  /// @param _validator the address to use as the validator
+  /// @param _loyaltyPeriodDays the amount of days that will be used for the loyalty period
+  /// @param _ixtToken the address of the IXT ERC20 token to be used as stake and for rewards
+  /// @param _invitationReward the amount of reward used when a member uses an invitation code
+  /// @param _loyaltyRewardAmount the rate used as a loyalty reward after every loyalty period
+  /// @param _ixtStakingLevels three ascending amounts of IXT token to be used as staking levels
   constructor(
     address _validator,
     uint256 _loyaltyPeriodDays,
@@ -239,10 +265,14 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
 
   /*      (member control)      */
 
-
-  /// @notice Registers new user as a member after the KYC process
+  /// @notice Registers a new user as a member after the KYC process
   /// @notice This function should not add the invitationCode
   /// to the mapping yet, this should only happen after join
+  /// @notice This function can only be called by a "validator" which is set inside the
+  /// constructor
+  /// @param _membershipNumber the membership number of the member to authorise
+  /// @param _memberAddress the EOA address of the member to authorise
+  /// @param _invitationCode should be associated with *this* member in order to apply invitation rewards
   function authoriseUser(
     uint256 _membershipNumber,
     address _memberAddress,
@@ -273,6 +303,11 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   }
 
   /// @notice Called by a member once they have been approved to join the scheme
+  /// @notice Before calling the prospective member *must* have approved the appropriate amount of
+  /// IXT token to be transferred by this contract
+  /// @param _stakeLevel the staking level used by this member. Note this is not the staking *amount*.
+  /// @param invitationCodeToClaim the invitation code of another member which is used to give the
+  /// other member a reward upon *this* user joining.
   function join(
     StakeLevel _stakeLevel,
     bytes32 invitationCodeToClaim
@@ -302,6 +337,8 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     emit NewMemberJoined(msg.sender, member.membershipNumber, amountDeposited, block.timestamp);
   }
 
+  /// @notice Called by the member if they wish to cancel their membership
+  /// @notice This function will return all stake and eligible reward balance back to the user
   function cancelMembership()
     public
     whenNotPaused()
@@ -311,6 +348,8 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     emit MemberInitiatedCancelMembership(msg.sender, refund);
   }
 
+  /// @notice Called by the member if they wish to claim the rewards they are eligible
+  /// @notice This function will return all eligible reward balance back to the user
   function claimRewards()
     public
     whenNotPaused()
@@ -320,8 +359,89 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     emit MemberInitiatedClaimRewards(msg.sender, rewardClaimed);
   }
 
+  /*      (getter functions)      */
+
+  /// @notice Called in order to get the number of members on the platform
+  /// @return length of the members array
+  function getMembersArrayLength() public view returns (uint256) {
+    return membersArray.length;
+  }
+
+  /// @notice Called to obtain the account balance of any given member
+  /// @param memberAddress the address of the member to get the account balance for
+  /// @return the account balance of the member in question
+  function getAccountBalance(address memberAddress)
+    public
+    view
+    userIsJoined(memberAddress)
+    returns (uint256)
+  {
+    return getStakeBalance(memberAddress) +
+      getRewardBalance(memberAddress);
+  }
+
+  /// @notice Called to obtain the stake balance of any given member
+  /// @param memberAddress the address of the member to get the stake balance for
+  /// @return the stake balance of the member in question
+  function getStakeBalance(address memberAddress)
+    public
+    view
+    userIsJoined(memberAddress)
+    returns (uint256)
+  {
+    return members[memberAddress].stakeBalance;
+  }
+
+  /// @notice Called to obtain the reward balance of any given member
+  /// @param memberAddress the address of the member to get the total reward balance for
+  /// @return the total reward balance of the member in question
+  function getRewardBalance(address memberAddress)
+    public
+    view
+    userIsJoined(memberAddress)
+    returns (uint256)
+  {
+    return getInvitationRewardBalance(memberAddress) +
+      getLoyaltyRewardBalance(memberAddress);
+  }
+
+  /// @notice Called to obtain the invitation reward balance of any given member
+  /// @param memberAddress the address of the member to get the invitation reward balance for
+  /// @return the invitation reward balance of the member in question
+  function getInvitationRewardBalance(address memberAddress)
+    public
+    view
+    userIsJoined(memberAddress)
+    returns (uint256)
+  {
+    return members[memberAddress].invitationRewards;
+  }
+
+  /// @notice Called to obtain the loyalty reward balance of any given member
+  /// @param memberAddress the address of the member to get the loyalty reward balance for
+  /// @return the loyalty reward balance of the member in question
+  function getLoyaltyRewardBalance(address memberAddress)
+    public
+    view
+    userIsJoined(memberAddress)
+    returns (uint256 loyaltyReward)
+  {
+    uint256 loyaltyPeriodSeconds = loyaltyPeriodDays * 1 days;
+    Member storage thisMember = members[memberAddress];
+    uint256 elapsedTimeSinceEligible = block.timestamp - thisMember.startOfLoyaltyRewardEligibility;
+    loyaltyReward = thisMember.previouslyAppliedLoyaltyBalance;
+    if (elapsedTimeSinceEligible >= loyaltyPeriodSeconds) {
+      uint256 numWholePeriods = SafeMath.div(elapsedTimeSinceEligible, loyaltyPeriodSeconds);
+      uint256 rewardForEachPeriod = thisMember.stakeBalance * loyaltyRewardAmount / 100;
+      loyaltyReward += rewardForEachPeriod * numWholePeriods;
+    }
+  }
+
   /*      (admin functions)      */
 
+  /// @notice Called by the admin to deposit extra IXT into the contract to be used as rewards
+  /// @notice This function can only be called by the contract owner
+  /// @param amountToDeposit the amount of IXT ERC20 token to deposit into the pool
   function depositPool(uint256 amountToDeposit)
     public
     onlyOwner
@@ -330,6 +450,9 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     emit PoolDeposit(msg.sender, amountDeposited);
   }
 
+  /// @notice Called by the admin to withdraw IXT from the pool balance
+  /// @notice This function can only be called by the contract owner
+  /// @param amountToWithdraw the amount of IXT ERC20 token to withdraw from the pool
   function withdrawPool(uint256 amountToWithdraw)
     public
     onlyOwner
@@ -345,7 +468,12 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     emit PoolWithdraw(msg.sender, amountToWithdraw);
   }
 
-  /// @dev Can be called if user is authorised or joined
+  /// @notice Called by an admin to remove a member from the platform
+  /// @notice This function can only be called by the contract owner
+  /// @notice The member will be automatically refunded their stake balance and any
+  /// unclaimed rewards as a result of being removed by the admin
+  /// @notice Can be called if user is authorised *or* joined
+  /// @param userAddress the address of the member that the admin wishes to remove
   function removeMember(address userAddress)
     public
     userIsAuthorised(userAddress)
@@ -355,6 +483,10 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     emit AdminRemovedMember(msg.sender, userAddress, refund);
   }
 
+  /// @notice Called by an admin in emergency situations only, will returns *ALL* stake balance
+  /// and reward balances back to the users. Any left over pool balance will be returned to the
+  /// contract owner.
+  /// @notice This function can only be called by the contract owner
   function drain() public onlyOwner {
     /// @dev Refund and delete all members
     for (uint256 index = 0; index < membersArray.length; index++) {
@@ -380,69 +512,9 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     emit ContractDrained(msg.sender);
   }
 
-  /*      (getter functions)      */
-
-  function getMembersArrayLength() public view returns (uint256) {
-    return membersArray.length;
-  }
-
-  function getAccountBalance(address memberAddress)
-    public
-    view
-    userIsJoined(memberAddress)
-    returns (uint256)
-  {
-    return getStakeBalance(memberAddress) +
-      getRewardBalance(memberAddress);
-  }
-
-  function getStakeBalance(address memberAddress)
-    public
-    view
-    userIsJoined(memberAddress)
-    returns (uint256)
-  {
-    return members[memberAddress].stakeBalance;
-  }
-
-  function getRewardBalance(address memberAddress)
-    public
-    view
-    userIsJoined(memberAddress)
-    returns (uint256)
-  {
-    return getInvitationRewardBalance(memberAddress) +
-      getLoyaltyRewardBalance(memberAddress);
-  }
-
-  function getInvitationRewardBalance(address memberAddress)
-    public
-    view
-    userIsJoined(memberAddress)
-    returns (uint256)
-  {
-    return members[memberAddress].invitationRewards;
-  }
-
-  function getLoyaltyRewardBalance(address memberAddress)
-    public
-    view
-    userIsJoined(memberAddress)
-    returns (uint256 loyaltyReward)
-  {
-    uint256 loyaltyPeriodSeconds = loyaltyPeriodDays * 1 days;
-    Member storage thisMember = members[memberAddress];
-    uint256 elapsedTimeSinceEligible = block.timestamp - thisMember.startOfLoyaltyRewardEligibility;
-    loyaltyReward = thisMember.previouslyAppliedLoyaltyBalance;
-    if (elapsedTimeSinceEligible >= loyaltyPeriodSeconds) {
-      uint256 numWholePeriods = SafeMath.div(elapsedTimeSinceEligible, loyaltyPeriodSeconds);
-      uint256 rewardForEachPeriod = thisMember.stakeBalance * loyaltyRewardAmount / 100;
-      loyaltyReward += rewardForEachPeriod * numWholePeriods;
-    }
-  }
-
-  /*      (setter functions)      */
-
+  /// @notice Called by the contract owner to set the invitation reward to be given to future members
+  /// @notice This function does not affect previously awarded invitation rewards
+  /// @param _invitationReward the amount that the invitation reward should be set to
   function setInvitationReward(uint256 _invitationReward)
     public
     onlyOwner
@@ -451,6 +523,11 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     emit InvitationRewardChanged(_invitationReward);
   }
 
+  /// @notice Called by the contract owner to set the loyalty reward rate to be given to future members
+  /// @notice This function does not affect previously awarded loyalty rewards
+  /// @notice The loyalty reward amount is actually a rate from 0 to 100 that is used to
+  /// calculate the proportion of stake balance that should be rewarded.
+  /// @param newLoyaltyRewardAmount the amount that the loyalty reward should be set to
   function setLoyaltyRewardAmount(uint256 newLoyaltyRewardAmount)
     public
     onlyOwner

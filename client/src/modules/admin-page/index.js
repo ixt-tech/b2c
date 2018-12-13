@@ -35,23 +35,18 @@ class AdminPage extends React.Component {
       Contract.setProvider(web3.currentProvider);
       const contract = await Contract.deployed();
 
-      const length = await contract.membersArray.length;
-      console.log(length);
-
-      const members = [
-        { membershipNumber: 1, memberAddress: '0x1', productsCovered: 'Personal Travel Crisis', invitationCode: '0x1' },
-        { membershipNumber: 2, memberAddress: '0x2', productsCovered: 'Personal Travel Crisis', invitationCode: '0x2' },
-        { membershipNumber: 3, memberAddress: '0x3', productsCovered: 'Personal Travel Crisis', invitationCode: '0x3' },
-      ];
-
+      await this.getMembers(web3, contract);
       const columns = [
         { key: 'membershipNumber', name: 'Member ID' },
-        { key: 'memberAddress', name: 'Address' },
-        { key: 'productsCovered', name: 'Products' },
-        { key: 'invitationCode', name: 'Invite Code' }
+        { key: 'memberAddress', name: 'Wallet address' },
+        { key: 'stake', name: 'Stake balance' },
+        { key: 'invitationReward', name: 'Invitation reward' },
+        { key: 'loyaltyReward', name: 'Loyalty reward' },
+        { key: 'invitationCode', name: 'Invitation code' },
+        { key: 'productsCovered', name: 'Products' }
       ];
 
-      this.setState({ web3, account, contract, members, columns });
+      this.setState({ web3, account, contract, columns });
 
     } catch (error) {
       // Catch any errors for any of the above operations.
@@ -61,6 +56,26 @@ class AdminPage extends React.Component {
       console.log(error);
     }
   };
+
+  async getMembers(web3, contract) {
+    const length = await contract.getMembersArrayLength();
+    const members = [];
+    for(let i = 0; i < length; i++) {
+      let address = await contract.membersArray(i);
+      let m = await contract.members(address);
+      //let stakeBalance = await contract.getStakeBalance(address);
+      //let loyaltyBalance = await contract.getLoyaltyRewardBalance(address);
+      //let invitationBalance = await contract.getInvitationRewardBalance(address);
+      let member = {
+        membershipNumber: m.membershipNumber.toString(),
+        memberAddress: address,
+        productsCovered: '',
+        invitationCode: web3.utils.toAscii(m.invitationCode)
+      }
+      members.push(member);
+    }
+    this.setState({ members });
+  }
 
   getCellActions(column, row) {
     return null;
@@ -74,7 +89,7 @@ class AdminPage extends React.Component {
       <Container>
         <h1>IXT Protect Admin</h1>
         <h4 className='address'>Address: { this.state.account }</h4>
-        <MemberDialog account={this.state.account} contract={this.state.contract} />
+        <MemberDialog account={this.state.account} web3={this.state.web3} contract={this.state.contract} postSubmit={this.getMembers}/>
         <h2>Members</h2>
         <ReactDataGrid
           columns={this.state.columns}

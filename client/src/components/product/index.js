@@ -11,19 +11,17 @@ import {
 } from 'semantic-ui-react';
 import './styles.css';
 
-class Reward extends React.Component {
+class Product extends React.Component {
 
-  state = { rewardBalance: 0 };
+  state = { };
 
   constructor(props) {
     super(props);
-    this.handleWithdraw = this.handleWithdraw.bind(this);
   }
 
   componentDidMount = async () => {
     const contract = await this.props.contract;
     const account = await this.props.account;
-    //const rewardBalance = await contract.getRewardBalance(account);
     this.setState({ rewardBalance: 1000});//rewardBalance.toString()});
   }
 
@@ -35,17 +33,15 @@ class Reward extends React.Component {
     return (
       <Card>
         <Card.Content>
-          <Card.Header>Reward balance</Card.Header>
-          <Card.Meta>Your current reward balance</Card.Meta>
+          <Card.Header>Protection</Card.Header>
+          <Card.Meta>Your current products</Card.Meta>
           <Card.Description>
             <Grid>
-              <Grid.Column width={9}>
-                <h1>{this.state.rewardBalance} IXT</h1>
+              <Grid.Column width={11}>
+                Travel Crisis Protection
               </Grid.Column>
               <Grid.Column width={2}>
-                {this.state.rewardBalance > 0 &&
-                <Button inverted>Withdraw</Button>
-                }
+                <Button inverted>Details</Button>
               </Grid.Column>
             </Grid>
           </Card.Description>
@@ -56,4 +52,4 @@ class Reward extends React.Component {
 
 }
 
-export default Reward;
+export default Product;

@@ -5,6 +5,7 @@ import {
 import './styles.css';
 import Stake from '../stake'
 import Reward from '../reward'
+import Product from '../product'
 
 class AccountDetails extends React.Component {
 
@@ -17,13 +18,7 @@ class AccountDetails extends React.Component {
       <Card.Group itemsPerRow={3}>
         <Stake contract={this.props.contract} account={this.props.account}/>
         <Reward contract={this.props.contract} account={this.props.account}/>
-        <Card>
-          <Card.Content>
-            <Card.Header>Products</Card.Header>
-            <Card.Description>Travel Crisis Protection</Card.Description>
-            <Card.Meta>Start date: Not activated</Card.Meta>
-          </Card.Content>
-        </Card>
+        <Product contract={this.props.contract} account={this.props.account}/>
       </Card.Group>
     );
   }

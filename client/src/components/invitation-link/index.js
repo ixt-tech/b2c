@@ -18,8 +18,9 @@ class InvitationLink extends React.Component {
   }
 
   componentDidMount = async () => {
+    const web3 = this.props.web3;
     const member = this.props.member;
-    const invitationLink = 'https://ixt.global/sign-up?invitation=' + member.invitationCode;
+    const invitationLink = 'https://ixt.global/sign-up?invitation=' + web3.utils.toAscii(member.invitationCode);
     this.setState({ invitationLink });
   }
 

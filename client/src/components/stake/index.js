@@ -30,8 +30,12 @@ class Stake extends React.Component {
 
   handleDeposit = async (event) => {
     const contract = await this.props.contract;
-    const account = await this.props.account;
-    contract.join(1000, '0x00', {from: account});
+    await contract.join(
+      0,
+      '0x00',
+      {from: this.props.account}
+      );
+    console.log('deposited stake...');
     event.preventDefault();
   }
 
@@ -58,7 +62,7 @@ class Stake extends React.Component {
                   <h1>{this.state.stakeBalance} IXT</h1>
                 </Grid.Column>
                 <Grid.Column width={2}>
-                  <Button>Withdraw</Button>
+                  <Button inverted>Withdraw</Button>
                 </Grid.Column>
               </Grid>
             </Card.Description>
@@ -78,7 +82,7 @@ class Stake extends React.Component {
                     <Form.Field control={Select} width={14} options={this.options} placeholder='Stake amount'/>
                   </Grid.Column>
                   <Grid.Column width={4}>
-                    <Form.Button content='Deposit'/>
+                    <Form.Button inverted content='Deposit'/>
                   </Grid.Column>
                 </Grid>
               </Form>

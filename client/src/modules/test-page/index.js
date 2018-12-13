@@ -31,11 +31,13 @@ class TestPage extends React.Component {
       Contract.setProvider(web3.currentProvider);
       const contract = await Contract.deployed();
 
+      const account = web3.utils.toChecksumAddress(accounts[0]);
       console.log('Contract address: ' + contract.address);
-      console.log('Account: ' + accounts[0]);
-      const members = await contract.members(web3.utils.toChecksumAddress(accounts[0]));
-      console.log(members);
+      console.log('Account: ' + account);
+      const members = await contract.members(account);
 
+      let r = await contract.totalMemberBalance();
+      console.log(r.toString());
       this.setState({ web3, accounts, contract });
 
     } catch (error) {
@@ -43,7 +45,7 @@ class TestPage extends React.Component {
       alert(
         `Failed to load your IXT Protect account. You must connect with your account you registered with.`
       );
-      console.log(error);
+      console.log(error.message);
     }
   };
 

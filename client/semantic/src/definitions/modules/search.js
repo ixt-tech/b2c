@@ -576,7 +576,7 @@ $.fn.search = function(parameters) {
               ? callback
               : function(){}
             ;
-            if($module.api('is loading')) {
+            if($module.api('is connecting')) {
               $module.api('abort');
             }
             module.setup.api(searchTerm, callback);

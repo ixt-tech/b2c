@@ -205,7 +205,7 @@ $.fn.visibility = function(parameters) {
             }
           },
           load: function() {
-            module.debug('Page finished loading');
+            module.debug('Page finished connecting');
             requestAnimationFrame(module.refresh);
           },
           // publishes scrollchange event on one scroll
@@ -289,7 +289,7 @@ $.fn.visibility = function(parameters) {
               src = $module.data(metadata.src)
             ;
             if(src) {
-              module.verbose('Lazy loading image', src);
+              module.verbose('Lazy connecting image', src);
               settings.once           = true;
               settings.observeChanges = false;
 

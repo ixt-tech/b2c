@@ -10,7 +10,7 @@ import './styles.css';
 import getWeb3 from '../../utils/getWeb3';
 import IxtProtect from '../../contracts/IxtProtect.json';
 import truffleContract from 'truffle-contract';
-
+import Connecting from '../../components/connecting';
 
 class AdminPage extends React.Component {
 
@@ -39,7 +39,7 @@ class AdminPage extends React.Component {
       const columns = [
         { key: 'membershipNumber', name: 'Member ID' },
         { key: 'memberAddress', name: 'Wallet address' },
-        { key: 'stake', name: 'Stake balance' },
+        { key: 'stakeBalance', name: 'Stake balance' },
         { key: 'invitationReward', name: 'Invitation reward' },
         { key: 'loyaltyReward', name: 'Loyalty reward' },
         { key: 'invitationCode', name: 'Invitation code' },
@@ -70,7 +70,8 @@ class AdminPage extends React.Component {
         membershipNumber: m.membershipNumber.toString(),
         memberAddress: address,
         productsCovered: '',
-        invitationCode: web3.utils.toAscii(m.invitationCode)
+        invitationCode: web3.utils.toAscii(m.invitationCode),
+        stakeBalance: 0,
       }
       members.push(member);
     }
@@ -83,8 +84,9 @@ class AdminPage extends React.Component {
 
   render() {
     if (!this.state.web3) {
-      return <div>Loading Web3, accounts, and contract...</div>;
+      return <Connecting />;
     }
+
     return (
       <Container>
         <h1>IXT Protect Admin</h1>

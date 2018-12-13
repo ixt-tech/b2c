@@ -25,7 +25,9 @@ class MemberDialog extends React.Component {
     const member = this.state.member;
     member[name] = value;
     if(name == 'address' && value.length > 10) {
-      member.invitationCode = value.substring(value.length - 8);
+      let code = value.substring(value.length - 8);
+      member.membershipNumber = code;
+      member.invitationCode = code;
     }
     this.setState({ member: member });
   }
@@ -35,7 +37,7 @@ class MemberDialog extends React.Component {
     const contract = this.props.contract;
     const member = this.state.member;
     contract.authoriseUser(
-      member.membershipNumber,
+      web3.utils.fromAscii(member.membershipNumber),
       member.address,
       web3.utils.fromAscii(member.invitationCode),
       {from: this.props.account}
@@ -61,7 +63,7 @@ class MemberDialog extends React.Component {
 
   render() {
     return (
-      <Modal size='tiny' open={this.state.modalOpen} trigger={<Button onClick={this.handleOpen} onClose={this.handleClose}>Add Member</Button>}>
+      <Modal size='tiny' open={this.state.modalOpen} trigger={<Button positive onClick={this.handleOpen} onClose={this.handleClose}>Add Member</Button>}>
         <Modal.Header>{this.state.member.id ? 'Edit' : 'New'} Member</Modal.Header>
         <Modal.Content>
           <Form onSubmit={this.handleSubmit}>
@@ -75,7 +77,7 @@ class MemberDialog extends React.Component {
           <Button onClick={this.handleClose}>
             Cancel
           </Button>
-          <Button onClick={this.handleSubmit}>
+          <Button onClick={this.handleSubmit} positive>
             OK
           </Button>
         </Modal.Actions>

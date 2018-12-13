@@ -673,7 +673,7 @@ $.api = $.fn.api = function(parameters) {
             $context.addClass(className.error);
           },
           loading: function() {
-            module.verbose('Adding loading state to element', $context);
+            module.verbose('Adding connecting state to element', $context);
             $context.addClass(className.loading);
             requestStartTime = new Date().getTime();
           }
@@ -685,7 +685,7 @@ $.api = $.fn.api = function(parameters) {
             $context.removeClass(className.error);
           },
           loading: function() {
-            module.verbose('Removing loading state from element', $context);
+            module.verbose('Removing connecting state from element', $context);
             $context.removeClass(className.loading);
           }
         },
@@ -1048,7 +1048,7 @@ $.api.settings = {
   // context for applying state classes
   stateContext      : false,
 
-  // duration for loading state
+  // duration for connecting state
   loadingDuration   : 0,
 
   // whether to hide errors after a period of time

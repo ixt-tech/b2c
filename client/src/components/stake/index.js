@@ -10,6 +10,8 @@ import {
   Grid,
 } from 'semantic-ui-react';
 import './styles.css';
+import ERC20 from '../../contracts/ERC20.json';
+import truffleContract from "truffle-contract";
 
 class Stake extends React.Component {
 
@@ -30,12 +32,19 @@ class Stake extends React.Component {
 
   handleDeposit = async (event) => {
     const contract = await this.props.contract;
+    const ixtContract = await this.props.ixtContract;
+
+    await ixtContract.approve(
+      contract.address,
+      100000000000000,
+      {from: this.props.account}
+    );
+
     await contract.join(
       0,
       '0x00',
       {from: this.props.account}
-      );
-    console.log('deposited stake...');
+    );
     event.preventDefault();
   }
 

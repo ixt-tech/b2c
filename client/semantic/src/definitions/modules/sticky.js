@@ -203,7 +203,7 @@ $.fn.sticky = function(parameters) {
             });
           },
           load: function() {
-            module.verbose('Page contents finished loading');
+            module.verbose('Page contents finished connecting');
             requestAnimationFrame(module.refresh);
           },
           resize: function() {

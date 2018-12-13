@@ -1,25 +1,26 @@
 import React, { Component } from "react";
 import {BrowserRouter as Router, Redirect, Route, Switch} from 'react-router-dom';
 import Loadable from 'react-loadable';
-import Header from './components/header/index'
+import Header from './components/header/index';
+import Connecting from './components/connecting';
 
 import "./app.css";
 
-const Loading = () => <div>Loading...</div>;
+const l = () => <Connecting />;
 
 const AdminPage = Loadable({
   loader: () => import('./modules/admin-page'),
-  loading: Loading,
+  loading: l,
 });
 
 const AccountPage = Loadable({
   loader: () => import('./modules/account-page'),
-  loading: Loading,
+  loading: l,
 });
 
 const TestPage = Loadable({
   loader: () => import('./modules/test-page'),
-  loading: Loading,
+  loading: l,
 });
 
 class App extends Component {

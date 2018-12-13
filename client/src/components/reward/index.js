@@ -23,11 +23,13 @@ class Reward extends React.Component {
   componentDidMount = async () => {
     const contract = await this.props.contract;
     const account = await this.props.account;
-    //const rewardBalance = await contract.getRewardBalance(account);
-    this.setState({ rewardBalance: 1000});//rewardBalance.toString()});
+    const rewardBalance = await contract.getRewardBalance(account);
+    this.setState({ rewardBalance: rewardBalance.toString()});
   }
 
   handleWithdraw = async (event) => {
+    const contract = await this.props.contract;
+    await contract.claimRewards({from: this.props.account});
     event.preventDefault();
   }
 
@@ -43,9 +45,7 @@ class Reward extends React.Component {
                 <h1>{this.state.rewardBalance} IXT</h1>
               </Grid.Column>
               <Grid.Column width={2}>
-                {this.state.rewardBalance > 0 &&
-                <Button inverted>Withdraw</Button>
-                }
+                <Button inverted onClick={this.handleWithdraw}>Withdraw</Button>
               </Grid.Column>
             </Grid>
           </Card.Description>

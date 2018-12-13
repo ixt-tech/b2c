@@ -291,7 +291,7 @@ $.fn.tab = function(parameters) {
               isLoading = $tab.hasClass(className.loading)
             ;
             if(!isLoading) {
-              module.verbose('Setting loading state for', $tab);
+              module.verbose('Setting connecting state for', $tab);
               $tab
                 .addClass(className.loading)
                 .siblings($tabs)
@@ -521,7 +521,7 @@ $.fn.tab = function(parameters) {
             }
             else if(existingRequest) {
               module.set.loading(tabPath);
-              module.debug('Content is already loading', fullTabPath);
+              module.debug('Content is already connecting', fullTabPath);
             }
             else if($.api !== undefined) {
               requestSettings = $.extend(true, {}, settings.apiSettings, apiSettings);
@@ -913,7 +913,7 @@ $.fn.tab.settings = {
   onFirstLoad : function(tabPath, parameterArray, historyEvent) {}, // called first time loaded
   onLoad      : function(tabPath, parameterArray, historyEvent) {}, // called on every load
   onVisible   : function(tabPath, parameterArray, historyEvent) {}, // called every time tab visible
-  onRequest   : function(tabPath, parameterArray, historyEvent) {}, // called ever time a tab beings loading remote content
+  onRequest   : function(tabPath, parameterArray, historyEvent) {}, // called ever time a tab beings connecting remote content
 
   templates : {
     determineTitle: function(tabArray) {} // returns page title for path

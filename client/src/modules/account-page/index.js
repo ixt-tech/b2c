@@ -6,19 +6,17 @@ import {
   Divider,
   Button,
 } from 'semantic-ui-react';
-
 import './styles.css';
+import getWeb3 from '../../utils/getWeb3';
+import IxtProtect from '../../contracts/IxtProtect.json';
+import IxtToken from '../../contracts/IxtToken.json';
+import truffleContract from 'truffle-contract';
 
+import Connecting from '../../components/connecting';
+import NonMember from '../../components/non-member';
 import AccountDetails from '../../components/account-details';
 import InvitationLink from '../../components/invitation-link';
-import Stake from '../../components/stake';
-import Withdraw from '../../components/withdraw';
 import TransactionGrid from '../../components/transaction-grid';
-
-import getWeb3 from '../../utils/getWeb3';
-import getContract from '../../utils/getContract';
-import IxtProtect from '../../contracts/IxtProtect.json';
-import truffleContract from 'truffle-contract';
 
 class AccountPage extends React.Component {
 
@@ -26,26 +24,26 @@ class AccountPage extends React.Component {
 
   componentDidMount = async () => {
     try {
-      // Get network provider and web3 instance.
       const web3 = await getWeb3();
-
-      // Use web3 to get the user's accounts.
       const accounts = await web3.eth.getAccounts();
       const account = web3.utils.toChecksumAddress(accounts[0]);
 
-      // Get the contract instance.
-      //const contract = await getContract(web3);
       const Contract = truffleContract(IxtProtect);
       Contract.setProvider(web3.currentProvider);
       const contract = await Contract.deployed();
+
+      const IxtContract = truffleContract(IxtToken);
+      IxtContract.setProvider(web3.currentProvider);
+      const ixtAddress = await contract.ixtToken();
+      const ixtContract = await IxtContract.at(ixtAddress);
+
       const member = await contract.members(account);
-      if(member.membershipNumber.toString() == 0) {
-        alert('You are not a member');
+      if(member.membershipNumber.toString() != 0) {
+        this.setState({ isMember: true });
       }
-      this.setState({ web3, account, contract, member });
+      this.setState({ web3, account, contract, ixtContract, member });
 
     } catch (error) {
-      // Catch any errors for any of the above operations.
       alert(
         `Failed to load your IXT Protect account. You must connect with your account you registered with.`
       );
@@ -55,8 +53,11 @@ class AccountPage extends React.Component {
 
   render() {
     if (!this.state.web3) {
-      return <div>Loading Web3, accounts, and contract...</div>;
+      return <Connecting />;
+    } else if(!this.state.isMember) {
+      return <NonMember />
     }
+
     return (
       <Container>
 
@@ -66,6 +67,7 @@ class AccountPage extends React.Component {
         <AccountDetails
           account={ this.state.account }
           contract={ this.state.contract }
+          ixtContract={ this.state.ixtContract }
         />
 
         <InvitationLink web3={this.state.web3} member={ this.state.member } />

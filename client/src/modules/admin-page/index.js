@@ -63,15 +63,17 @@ class AdminPage extends React.Component {
     for(let i = 0; i < length; i++) {
       let address = await contract.membersArray(i);
       let m = await contract.members(address);
-      //let stakeBalance = await contract.getStakeBalance(address);
-      //let loyaltyBalance = await contract.getLoyaltyRewardBalance(address);
-      //let invitationBalance = await contract.getInvitationRewardBalance(address);
+      let stakeBalance = await contract.getStakeBalance(address);
+      let loyaltyBalance = 0;//await contract.getLoyaltyRewardBalance(address);
+      let invitationBalance = 0;//await contract.getInvitationRewardBalance(address);
       let member = {
         membershipNumber: m.membershipNumber.toString(),
         memberAddress: address,
         productsCovered: '',
         invitationCode: web3.utils.toAscii(m.invitationCode),
-        stakeBalance: 0,
+        stakeBalance: stakeBalance,
+        loyaltyBalance: loyaltyBalance,
+        invitationBalance: invitationBalance,
       }
       members.push(member);
     }

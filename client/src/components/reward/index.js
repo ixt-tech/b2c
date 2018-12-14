@@ -10,6 +10,7 @@ import {
   Grid,
 } from 'semantic-ui-react';
 import './styles.css';
+import { fromBn, toBn } from '../../utils/number';
 
 class Reward extends React.Component {
 
@@ -23,8 +24,11 @@ class Reward extends React.Component {
   componentDidMount = async () => {
     const contract = await this.props.contract;
     const account = await this.props.account;
-    const rewardBalance = await contract.getRewardBalance(account);
-    this.setState({ rewardBalance: rewardBalance.toString()});
+    const member = await contract.members(account);
+    if(member.joinedTimestamp != 0) {
+      const rewardBalance = await contract.getRewardBalance(account);
+      this.setState({rewardBalance: fromBn(rewardBalance)});
+    }
   }
 
   handleWithdraw = async (event) => {
@@ -45,7 +49,9 @@ class Reward extends React.Component {
                 <h1>{this.state.rewardBalance} IXT</h1>
               </Grid.Column>
               <Grid.Column width={2}>
+                {this.state.rewardBalance > 0 &&
                 <Button inverted onClick={this.handleWithdraw}>Withdraw</Button>
+                }
               </Grid.Column>
             </Grid>
           </Card.Description>

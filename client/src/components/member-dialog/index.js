@@ -40,6 +40,7 @@ class MemberDialog extends React.Component {
       web3.utils.fromAscii(member.membershipNumber),
       member.address,
       web3.utils.fromAscii(member.invitationCode),
+      web3.utils.fromAscii(member.referralInvitationCode),
       {from: this.props.account}
     );
 
@@ -54,7 +55,8 @@ class MemberDialog extends React.Component {
       membershipNumber: '',
       address: '',
       products: '',
-      invitationCode: ''
+      invitationCode: '',
+      referralInvitationCode: ''
     };
   }
 
@@ -68,9 +70,11 @@ class MemberDialog extends React.Component {
         <Modal.Content>
           <Form onSubmit={this.handleSubmit}>
             <Form.Input placeholder='Wallet address' name='address' value={this.state.member.address} onChange={this.handleChange} />
-            <Form.Input placeholder='Membership ID' name='membershipNumber' value={this.state.member.membershipNumber} onChange={this.handleChange} />
-            <Form.Input placeholder='Products' name='products' value={this.state.member.productsCovered} onChange={this.handleChange} />
+            <Form.Input placeholder='Referral Invitation Code' name='referralInvitationCode' value={this.state.member.referralInvitationCode} onChange={this.handleChange} />
             <Form.Input placeholder='Invitation Code' name='invitationCode' value={this.state.member.invitationCode} onChange={this.handleChange} />
+            <Form.Input placeholder='Membership ID' name='membershipNumber' value={this.state.member.membershipNumber} onChange={this.handleChange} />
+            <Form.Input placeholder='Invitation Code' name='invitationCode' value={this.state.member.invitationCode} onChange={this.handleChange} />
+            <Form.Input placeholder='Products' name='products' value={this.state.member.productsCovered} onChange={this.handleChange} />
           </Form>
         </Modal.Content>
         <Modal.Actions>

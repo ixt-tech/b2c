@@ -8,8 +8,12 @@ const fromBn = (num) => {
   }
 }
 
+const asNum = (num) => {
+  return num.toNumber();
+}
+
 const toBn = (num) => {
 
 }
 
-export { fromBn, toBn };
+export { fromBn, toBn, asNum };

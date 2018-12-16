@@ -11,6 +11,7 @@ import getWeb3 from '../../utils/getWeb3';
 import IxtProtect from '../../contracts/IxtProtect.json';
 import truffleContract from 'truffle-contract';
 import Connecting from '../../components/connecting';
+import { fromBn, toBn } from '../../utils/number';
 
 class AdminPage extends React.Component {
 
@@ -40,8 +41,8 @@ class AdminPage extends React.Component {
         { key: 'membershipNumber', name: 'Member ID' },
         { key: 'memberAddress', name: 'Wallet address' },
         { key: 'stakeBalance', name: 'Stake balance' },
-        { key: 'invitationReward', name: 'Invitation reward' },
-        { key: 'loyaltyReward', name: 'Loyalty reward' },
+        { key: 'invitationBalance', name: 'Invitation reward' },
+        { key: 'loyaltyBalance', name: 'Loyalty reward' },
         { key: 'invitationCode', name: 'Invitation code' },
         { key: 'productsCovered', name: 'Products' }
       ];
@@ -63,11 +64,16 @@ class AdminPage extends React.Component {
     for(let i = 0; i < length; i++) {
       let address = await contract.membersArray(i);
       let m = await contract.members(address);
-      let stakeBalance = await contract.getStakeBalance(address);
-      let loyaltyBalance = 0;//await contract.getLoyaltyRewardBalance(address);
-      let invitationBalance = 0;//await contract.getInvitationRewardBalance(address);
+
+      let stakeBalance, loyaltyBalance, invitationBalance = 0;
+      if(m.joinedTimestamp.toNumber() > 0) {
+        stakeBalance = fromBn(await contract.getStakeBalance(address));
+        loyaltyBalance = fromBn(await contract.getLoyaltyRewardBalance(address));
+        invitationBalance = fromBn(await contract.getInvitationRewardBalance(address));
+      }
+
       let member = {
-        membershipNumber: m.membershipNumber.toString(),
+        membershipNumber: web3.utils.toAscii(m.membershipNumber),
         memberAddress: address,
         productsCovered: '',
         invitationCode: web3.utils.toAscii(m.invitationCode),

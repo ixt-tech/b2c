@@ -16,7 +16,8 @@ import Connecting from '../../components/connecting';
 import NonMember from '../../components/non-member';
 import AccountDetails from '../../components/account-details';
 import InvitationLink from '../../components/invitation-link';
-import TransactionGrid from '../../components/transaction-grid';
+import Levels from '../../components/levels';
+import InvitationsGrid from '../../components/invitation-grid';
 
 class AccountPage extends React.Component {
 
@@ -41,6 +42,7 @@ class AccountPage extends React.Component {
       if(member.membershipNumber.toString() != 0) {
         this.setState({ isMember: true });
       }
+
       this.setState({ web3, account, contract, ixtContract, member });
 
     } catch (error) {
@@ -72,7 +74,10 @@ class AccountPage extends React.Component {
 
         <InvitationLink web3={this.state.web3} member={ this.state.member } />
 
-        <TransactionGrid />
+        <Levels contract={this.state.contract} />
+
+        <InvitationsGrid web3={this.state.web3} contract={this.state.contract} account={this.state.account} />
+
       </Container>
     );
   }

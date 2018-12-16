@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "bignumber.js": "^8.0.1",
+    "moment": "^2.23.0",
     "react": "^16.6.3",
     "react-data-grid": "^6.0.1",
     "react-dom": "^16.4.2",

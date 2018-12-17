@@ -6,7 +6,7 @@ import {
 } from 'semantic-ui-react';
 import './styles.css';
 import {fromBn} from "../../utils/number";
-import moment from 'moment';
+import { fromTimestamp } from '../../utils/date';
 
 class InvitationGrid extends React.Component {
 
@@ -35,7 +35,7 @@ class InvitationGrid extends React.Component {
         rows.push({
           key: i,
           rewardAmount: invitationReward.rewardAmount,
-          timestamp: block.timestamp * 1000,
+          timestamp: block.timestamp,
         });
       }
     }
@@ -45,13 +45,13 @@ class InvitationGrid extends React.Component {
   render() {
     return (
       <div>
-        <h2>Invitations</h2>
+        <h2>Invitation rewards</h2>
         <Divider />
         <Grid columns='equal'>
           { this.state.rows.map((row) => (
           <Grid.Row className='tx-row' children={this.state.rows} key={row.key}>
             <Grid.Column>{ fromBn(row.rewardAmount) } IXT</Grid.Column>
-            <Grid.Column>{ moment(row.timestamp).format('YYYY MMM DD') }</Grid.Column>
+            <Grid.Column>{ fromTimestamp(row.timestamp) }</Grid.Column>
           </Grid.Row>
           ))}
         </Grid>

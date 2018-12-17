@@ -37,7 +37,8 @@ contract IxtEvents {
   event InvitationRewardGiven(
     address memberReceivingReward,
     address memberGivingReward,
-    uint256 rewardAmount
+    uint256 rewardAmount,
+    uint256 invitationTimestamp
   );
 
   event PoolDeposit(

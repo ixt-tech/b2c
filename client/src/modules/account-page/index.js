@@ -79,12 +79,15 @@ class AccountPage extends React.Component {
           member={ this.state.member }
         />
 
-        <Levels contract={ this.state.contract } />
-
         <InvitationsGrid
           web3={this.state.web3}
           contract={this.state.contract}
           account={this.state.account}
+        />
+
+        <Levels
+          contract={ this.state.contract }
+          member={ this.state.member }
         />
 
       </Container>

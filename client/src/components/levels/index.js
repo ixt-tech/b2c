@@ -15,15 +15,18 @@ class Levels extends React.Component {
 
   componentDidMount = async () => {
     const contract = this.props.contract;
+    const member = this.props.member;
     const invitationReward = await contract.invitationReward();
     const loyaltyReward = await contract.loyaltyRewardAmount();
+    const stakeBalance = await member.stakeBalance;
+    const ixtloyaltyReward = fromBn(loyaltyReward / 100 * stakeBalance);
     const loyaltyPeriod = await contract.loyaltyPeriodDays();
     const poolSize = await contract.totalMemberBalance();
     const memberDeposits = await contract.totalPoolBalance();
     const numberOfMembers = await contract.getMembersArrayLength();
     this.setState({
       invitationReward: fromBn(invitationReward),
-      loyaltyReward: asNum(loyaltyReward),
+      loyaltyReward: ixtloyaltyReward,
       loyaltyPeriod: asNum(loyaltyPeriod),
       poolSize: fromBn(poolSize) + fromBn(memberDeposits),
       numberOfMembers: asNum(numberOfMembers)
@@ -42,7 +45,7 @@ class Levels extends React.Component {
             </Table.Row>
             <Table.Row>
               <Table.Cell>Loyalty reward</Table.Cell>
-              <Table.Cell>{ this.state.loyaltyReward }%</Table.Cell>
+              <Table.Cell>{ this.state.loyaltyReward } IXT</Table.Cell>
             </Table.Row>
             <Table.Row>
               <Table.Cell>Loyalty period</Table.Cell>

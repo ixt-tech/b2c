@@ -2,6 +2,9 @@ var IxtProtect = artifacts.require("./IxtProtect.sol");
 var IxtToken = artifacts.require("./IxtToken.sol");
 
 module.exports = async function(deployer, network, accounts) {
+
+  console.log('Deploying to ' + network + '...');
+
   const validator = accounts[0];
   const loyaltyPeriod = "90";
   /// 200 IXT for all rewards

@@ -12,6 +12,7 @@ import {
 } from 'semantic-ui-react';
 import './styles.css';
 import { fromBn, toBn } from '../../utils/number';
+import { fromTimestamp } from '../../utils/date';
 
 class Stake extends React.Component {
 
@@ -26,8 +27,8 @@ class Stake extends React.Component {
   componentDidMount = async () => {
     const contract = await this.props.contract;
     const account = await this.props.account;
-    const member = await contract.members(account);
-    this.setState({stakeBalance: fromBn(member.stakeBalance)});
+    const member = await this.props.member;
+    this.setState({ stakeBalance: fromBn(member.stakeBalance), stakedAt: fromTimestamp(member.joinedTimestamp) });
   }
 
   handleChange = (e, { value }) => {
@@ -59,7 +60,7 @@ class Stake extends React.Component {
         <Card>
           <Card.Content>
             <Card.Header>Stake</Card.Header>
-            <Card.Meta>Your current stake balance</Card.Meta>
+            <Card.Meta>Stake deposited on: {this.state.stakedAt}</Card.Meta>
             <Card.Description>
               <Form onSubmit={this.handleWithdraw}>
                 <Grid>

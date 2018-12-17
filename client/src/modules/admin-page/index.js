@@ -12,6 +12,7 @@ import IxtProtect from '../../contracts/IxtProtect.json';
 import truffleContract from 'truffle-contract';
 import Connecting from '../../components/connecting';
 import { fromBn, toBn } from '../../utils/number';
+import { fromTimestamp } from '../../utils/date';
 
 class AdminPage extends React.Component {
 
@@ -37,15 +38,22 @@ class AdminPage extends React.Component {
       const contract = await Contract.deployed();
 
       await this.getMembers(web3, contract);
+
+      const defaultProps = {
+        resizable: true,
+        width: 200
+      };
       const columns = [
-        { key: 'membershipNumber', name: 'Member ID' },
-        { key: 'memberAddress', name: 'Wallet address' },
-        { key: 'stakeBalance', name: 'Stake balance' },
-        { key: 'invitationBalance', name: 'Invitation reward' },
-        { key: 'loyaltyBalance', name: 'Loyalty reward' },
-        { key: 'invitationCode', name: 'Invitation code' },
-        { key: 'productsCovered', name: 'Products' }
-      ];
+        { key: 'membershipNumber', name: 'Member ID', width: 50 },
+        { key: 'memberAddress', name: 'Wallet address', width: 80 },
+        { key: 'addedTimestamp', name: 'Added at', width: 80 },
+        { key: 'stakedTimestamp', name: 'Staked at', width: 80 },
+        { key: 'stakeBalance', name: 'Stake balance', width: 80 },
+        { key: 'invitationBalance', name: 'Invitation reward', width: 80 },
+        { key: 'loyaltyBalance', name: 'Loyalty reward', width: 80 },
+        { key: 'invitationCode', name: 'Invitation code', width: 80 },
+        { key: 'productsCovered', name: 'Products', width: 80 }
+      ].map(c => ({ ...c, ...defaultProps }));
 
       this.setState({ web3, account, contract, columns });
 
@@ -76,6 +84,8 @@ class AdminPage extends React.Component {
         membershipNumber: web3.utils.toAscii(m.membershipNumber),
         memberAddress: address,
         productsCovered: '',
+        addedTimestamp: fromTimestamp(m.authorisedTimestamp),
+        stakedTimestamp: fromTimestamp(m.joinedTimestamp),
         invitationCode: web3.utils.toAscii(m.invitationCode),
         stakeBalance: stakeBalance,
         loyaltyBalance: loyaltyBalance,
@@ -99,7 +109,7 @@ class AdminPage extends React.Component {
       <Container>
         <h1>IXT Protect Admin</h1>
         <h4 className='address'>Address: { this.state.account }</h4>
-        <MemberDialog account={this.state.account} web3={this.state.web3} contract={this.state.contract} postSubmit={this.getMembers}/>
+        <MemberDialog account={this.state.account} web3={this.state.web3} contract={this.state.contract} />
         <h2>Members</h2>
         <ReactDataGrid
           columns={this.state.columns}

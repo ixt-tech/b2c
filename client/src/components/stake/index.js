@@ -20,19 +20,24 @@ class Stake extends React.Component {
 
   constructor(props) {
     super(props);
+    this.refresh = this.refresh.bind(this);
     this.handleDeposit = this.handleDeposit.bind(this);
     this.handleWithdraw = this.handleWithdraw.bind(this);
   }
 
-  componentDidMount = async () => {
+  refresh = async () => {
     const contract = await this.props.contract;
     const account = await this.props.account;
-    const member = await this.props.member;
+    const member = await contract.members(account);
     this.setState({ stakeBalance: fromBn(member.stakeBalance), stakedAt: fromTimestamp(member.joinedTimestamp) });
   }
 
+  componentDidMount = async () => {
+    this.refresh();
+  }
+
   handleChange = (e, { value }) => {
-    this.setState({ stake: value });
+    this.refresh();
   }
 
   handleDeposit = async (event) => {
@@ -40,12 +45,14 @@ class Stake extends React.Component {
     const ixtContract = await this.props.ixtContract;
     const stake = this.state.stake;
     await ixtContract.approve(contract.address, 100000000000000, {from: this.props.account});
-    await contract.join(stake, {from: this.props.account});
+    await contract.join(stake, {from: this.props.account})
+    this.refresh();
   }
 
   handleWithdraw = async (event) => {
     const contract = await this.props.contract;
-    contract.cancelMembership({from: this.props.account});
+    await contract.cancelMembership({from: this.props.account});
+    this.refresh();
   }
 
   options = [

@@ -17,7 +17,7 @@ import NonMember from '../../components/non-member';
 import AccountDetails from '../../components/account-details';
 import InvitationLink from '../../components/invitation-link';
 import Levels from '../../components/levels';
-import InvitationsGrid from '../../components/invitation-grid';
+import EventGrid from '../../components/event-grid';
 
 class AccountPage extends React.Component {
 
@@ -79,15 +79,15 @@ class AccountPage extends React.Component {
           member={ this.state.member }
         />
 
-        <InvitationsGrid
-          web3={this.state.web3}
-          contract={this.state.contract}
-          account={this.state.account}
-        />
-
         <Levels
           contract={ this.state.contract }
           member={ this.state.member }
+        />
+
+        <EventGrid
+          web3={this.state.web3}
+          contract={this.state.contract}
+          account={this.state.account}
         />
 
       </Container>

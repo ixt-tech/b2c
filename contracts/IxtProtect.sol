@@ -11,64 +11,61 @@ import "./lib/ValidatorRole.sol";
 contract IxtEvents {
 
   event NewMemberAuthorised(
-    address memberAddress,
-    bytes32 membershipNumber,
-    bytes32 invitationCode,
-    uint256 authorisedTimestamp
+    address indexed memberAddress,
+    bytes32 indexed membershipNumber,
+    bytes32 indexed invitationCode
   );
 
   event NewMemberJoined(
-    address memberAddress,
-    bytes32 membershipNumber,
-    uint256 stakeLevel,
-    uint256 joinedTimestamp
+    address indexed memberAddress,
+    bytes32 indexed membershipNumber,
+    uint256 stakeLevel
   );
 
   event MemberInitiatedCancelMembership(
-    address memberThatCancelled,
+    address indexed memberThatCancelled,
     uint256 rewardAmount
   );
 
   event MemberInitiatedClaimRewards(
-    address member,
+    address indexed member,
     uint256 rewardAmount
   );
 
   event InvitationRewardGiven(
-    address memberReceivingReward,
-    address memberGivingReward,
-    uint256 rewardAmount,
-    uint256 invitationTimestamp
+    address indexed memberReceivingReward,
+    address indexed memberGivingReward,
+    uint256 rewardAmount
   );
 
   event PoolDeposit(
-    address depositer,
+    address indexed depositer,
     uint256 amount
   );
 
   event PoolWithdraw(
-    address withdrawer,
+    address indexed withdrawer,
     uint256 amount
   );
 
   event AdminRemovedMember(
-    address admin,
-    address userAddress,
+    address indexed admin,
+    address indexed userAddress,
     uint256 refundIssued
   );
 
   event MemberDrained(
-    address memberAddress,
+    address indexed memberAddress,
     uint256 amountRefunded
   );
 
   event PoolDrained(
-    address refundRecipient,
+    address indexed refundRecipient,
     uint256 amountRefunded
   );
 
   event ContractDrained(
-    address drainInitiator
+    address indexed drainInitiator
   );
 
   event InvitationRewardChanged(
@@ -316,7 +313,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
       emit InvitationRewardGiven(rewardMemberAddress, _memberAddress, invitationReward);
     }
 
-    emit NewMemberAuthorised(_memberAddress, _membershipNumber, _invitationCode, block.timestamp);
+    emit NewMemberAuthorised(_memberAddress, _membershipNumber, _invitationCode);
   }
 
   /// @notice Called by a member once they have been approved to join the scheme
@@ -337,7 +334,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     Member storage member = members[msg.sender];
     member.joinedTimestamp = block.timestamp;
     member.startOfLoyaltyRewardEligibility = block.timestamp;
-    emit NewMemberJoined(msg.sender, member.membershipNumber, amountDeposited, block.timestamp);
+    emit NewMemberJoined(msg.sender, member.membershipNumber, amountDeposited);
   }
 
   /// @notice Called by the member if they wish to cancel their membership

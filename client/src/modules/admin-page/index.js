@@ -21,6 +21,8 @@ class AdminPage extends React.Component {
   constructor(props) {
     super(props);
     this.getCellActions = this.getCellActions.bind(this);
+    this.getMembers = this.getMembers.bind(this);
+    this.addMember = this.addMember.bind(this);
   }
 
   componentDidMount = async () => {
@@ -40,19 +42,18 @@ class AdminPage extends React.Component {
       await this.getMembers(web3, contract);
 
       const defaultProps = {
-        resizable: true,
-        width: 200
+        resizable: true
       };
       const columns = [
-        { key: 'membershipNumber', name: 'Member ID', width: 50 },
-        { key: 'memberAddress', name: 'Wallet address', width: 80 },
-        { key: 'addedTimestamp', name: 'Added at', width: 80 },
-        { key: 'stakedTimestamp', name: 'Staked at', width: 80 },
-        { key: 'stakeBalance', name: 'Stake balance', width: 80 },
-        { key: 'invitationBalance', name: 'Invitation reward', width: 80 },
-        { key: 'loyaltyBalance', name: 'Loyalty reward', width: 80 },
-        { key: 'invitationCode', name: 'Invitation code', width: 80 },
-        { key: 'productsCovered', name: 'Products', width: 80 }
+        { key: 'membershipNumber', name: 'Member ID', width: 100 },
+        { key: 'memberAddress', name: 'Wallet address', width: 400 },
+        { key: 'addedTimestamp', name: 'Added at', width: 150 },
+        { key: 'stakedTimestamp', name: 'Staked at', width: 150 },
+        { key: 'stakeBalance', name: 'Stake', width: 100 },
+        { key: 'invitationBalance', name: 'Invitations', width: 100 },
+        { key: 'loyaltyBalance', name: 'Loyalty', width: 100 },
+        { key: 'invitationCode', name: 'Invitation code', width: 100 },
+        { key: 'productsCovered', name: 'Products', width: 200 }
       ].map(c => ({ ...c, ...defaultProps }));
 
       this.setState({ web3, account, contract, columns });
@@ -65,6 +66,19 @@ class AdminPage extends React.Component {
       console.log(error);
     }
   };
+
+  async addMember(member) {
+    const web3 = this.state.web3;
+    const contract = this.state.contract;
+    const account = this.state.account;
+    await contract.authoriseUser(
+      web3.utils.fromAscii(member.membershipNumber),
+      member.address,
+      web3.utils.fromAscii(member.invitationCode),
+      web3.utils.fromAscii(member.referralInvitationCode),
+      {from: account});
+    this.getMembers(web3, contract);
+  }
 
   async getMembers(web3, contract) {
     const length = await contract.getMembersArrayLength();
@@ -109,12 +123,12 @@ class AdminPage extends React.Component {
       <Container>
         <h1>IXT Protect Admin</h1>
         <h4 className='address'>Address: { this.state.account }</h4>
-        <MemberDialog account={this.state.account} web3={this.state.web3} contract={this.state.contract} />
+        <MemberDialog account={this.state.account} web3={this.state.web3} contract={this.state.contract} postSubmit={this.addMember}/>
         <h2>Members</h2>
         <ReactDataGrid
           columns={this.state.columns}
           rowGetter={i => this.state.members[i]}
-          rowsCount={3}
+          rowsCount={30}
           minHeight={500}
           getCellActions={this.getCellActions}
         />

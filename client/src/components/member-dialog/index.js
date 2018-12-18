@@ -33,21 +33,9 @@ class MemberDialog extends React.Component {
   }
 
   handleSubmit = async (event) => {
-    const web3 = this.props.web3;
-    const contract = this.props.contract;
-    const member = this.state.member;
-    contract.authoriseUser(
-      web3.utils.fromAscii(member.membershipNumber),
-      member.address,
-      web3.utils.fromAscii(member.invitationCode),
-      web3.utils.fromAscii(member.referralInvitationCode),
-      {from: this.props.account}
-    );
-
-    // call contract with new account
+    this.props.postSubmit(this.state.member);
     this.setState({ member: this.newMember() });
     this.setState({ modalOpen: false });
-    event.preventDefault();
   }
 
   newMember() {

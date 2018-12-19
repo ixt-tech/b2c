@@ -53,7 +53,7 @@ class MemberDialog extends React.Component {
 
   render() {
     return (
-      <Modal size='large' open={this.state.modalOpen} trigger={<Button positive onClick={this.handleOpen} onClose={this.handleClose}>Add Members</Button>}>
+      <Modal size='large' open={this.state.modalOpen} trigger={<Button positive onClick={this.handleOpen} onClose={this.handleClose}>Add members</Button>}>
         <Modal.Header>Add members</Modal.Header>
         <Modal.Content>
           <Form onSubmit={this.handleSubmit}>

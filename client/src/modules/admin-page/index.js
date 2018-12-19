@@ -6,7 +6,9 @@ import {
 import ReactDataGrid from 'react-data-grid';
 import MemberDialog from '../../components/member-dialog'
 import DepositPoolDialog from '../../components/deposit-pool-dialog'
+import WithdrawPoolDialog from '../../components/withdraw-pool-dialog'
 import AdminLevels from '../../components/admin-levels';
+import Pause from '../../components/pause';
 
 import './styles.css';
 import getWeb3 from '../../utils/getWeb3';
@@ -27,6 +29,7 @@ class AdminPage extends React.Component {
     this.addMembers = this.addMembers.bind(this);
     this.getMembers = this.getMembers.bind(this);
     this.depositPool = this.depositPool.bind(this);
+    this.withdrawPool = this.withdrawPool.bind(this);
   }
 
   componentDidMount = async () => {
@@ -51,7 +54,8 @@ class AdminPage extends React.Component {
       await this.getMembers(web3, contract);
 
       const defaultProps = {
-        resizable: true
+        resizable: true,
+        filterable: true
       };
       const columns = [
         { key: 'membershipNumber', name: 'Member ID', width: 100 },
@@ -93,18 +97,28 @@ class AdminPage extends React.Component {
     this.getMembers(web3, contract);
   }
 
-  async depositPool(deposit) {
+  async depositPool(amount) {
     const contract = this.state.contract;
     const account = this.state.account;
     const ixtContract = this.state.ixtContract;
     await ixtContract.approve(
       contract.address,
-      deposit * 10E7, {from: account}
-      );
+      amount * 10E7, {from: account}
+    );
     await contract.depositPool(
-      deposit * 10E7,
+      amount * 10E7,
       {from: account}
-      );
+    );
+  }
+
+  async withdrawPool(amount) {
+    const contract = this.state.contract;
+    const account = this.state.account;
+    const ixtContract = this.state.ixtContract;
+    await contract.withdrawPool(
+      amount * 10E7,
+      {from: account}
+    );
   }
 
   async getMembers(web3, contract) {
@@ -152,8 +166,10 @@ class AdminPage extends React.Component {
 
         <h4 className='address'>Address: { this.state.account }</h4>
 
-        <MemberDialog account={this.state.account} postSubmit={this.addMembers}/>
-        <DepositPoolDialog postSubmit={this.depositPool}/>
+        <MemberDialog account={ this.state.account } postSubmit={ this.addMembers }/>
+        <DepositPoolDialog postSubmit={ this.depositPool }/>
+        <WithdrawPoolDialog postSubmit={ this.withdrawPool }/>
+        <Pause contract={ this.state.contract } account={ this.state.account }/>
         <h4></h4>
 
         <AdminLevels

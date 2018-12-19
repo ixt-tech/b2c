@@ -33,7 +33,9 @@ class Stake extends React.Component {
   }
 
   componentDidMount = async () => {
+    const contract = await this.props.contract;
     const member = await this.props.member;
+    const account = await this.props.account;
     this.setState({ stakeBalance: fromBn(member.stakeBalance), stakedAt: fromTimestamp(member.stakeTimestamp) });
   }
 

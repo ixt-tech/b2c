@@ -6,7 +6,7 @@ import {
 } from 'semantic-ui-react';
 import './styles.css';
 
-class DepositPoolDialog extends React.Component {
+class WithdrawPoolDialog extends React.Component {
 
   constructor(props) {
     super(props);
@@ -35,8 +35,8 @@ class DepositPoolDialog extends React.Component {
 
   render() {
     return (
-      <Modal size='tiny' open={this.state.modalOpen} trigger={<Button positive onClick={this.handleOpen} onClose={this.handleClose}>Deposit to pool</Button>}>
-        <Modal.Header>Deposit IXT to pool</Modal.Header>
+      <Modal size='tiny' open={this.state.modalOpen} trigger={<Button negative onClick={this.handleOpen} onClose={this.handleClose}>Withdraw from pool</Button>}>
+        <Modal.Header>Withdraw IXT from pool</Modal.Header>
         <Modal.Content>
           <Form onSubmit={this.handleSubmit}>
             <Form.Input placeholder='IXT amount' name='amount' value={this.state.amount} onChange={this.handleChange} />
@@ -56,4 +56,4 @@ class DepositPoolDialog extends React.Component {
 
 }
 
-export default DepositPoolDialog;
+export default WithdrawPoolDialog;

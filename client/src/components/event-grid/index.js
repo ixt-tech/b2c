@@ -38,13 +38,17 @@ class EventGrid extends React.Component {
     return (
       <div>
         <h2>Account History</h2>
-        <Divider />
         <Grid>
+          <Grid.Row className='event-header'>
+            <Grid.Column width={4}>Event</Grid.Column>
+            <Grid.Column width={3}>Time</Grid.Column>
+            <Grid.Column width={4}>Transaction</Grid.Column>
+          </Grid.Row>
           { this.state.rows.map((row) => (
-          <Grid.Row className='tx-row' children={this.state.rows} key={row.key}>
-            <Grid.Column width={6}>{ row.title }</Grid.Column>
+          <Grid.Row className='event-row' children={this.state.rows} key={row.key}>
+            <Grid.Column width={4}>{ row.title }</Grid.Column>
             <Grid.Column width={3}>{ fromTimestamp(row.timestamp) }</Grid.Column>
-            <Grid.Column>{ row.transactionHash }</Grid.Column>
+            <Grid.Column width={4}>{ row.transactionHash }</Grid.Column>
           </Grid.Row>
           ))}
         </Grid>

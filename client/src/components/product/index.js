@@ -20,13 +20,10 @@ class Product extends React.Component {
   }
 
   componentDidMount = async () => {
-    const contract = await this.props.contract;
-    const account = await this.props.account;
-    this.setState({ rewardBalance: 1000});//rewardBalance.toString()});
   }
 
-  handleWithdraw = async (event) => {
-    event.preventDefault();
+  getProductDetails = async () => {
+    window.open('https://ixt.global/products/travel-crisis-protection', '_blank');
   }
 
   render() {
@@ -41,7 +38,7 @@ class Product extends React.Component {
                 Travel Crisis Protection
               </Grid.Column>
               <Grid.Column width={2}>
-                <Button inverted>Details</Button>
+                <Button inverted onClick={this.getProductDetails}>Details</Button>
               </Grid.Column>
             </Grid>
           </Card.Description>

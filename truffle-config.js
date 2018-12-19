@@ -54,15 +54,12 @@ module.exports = {
       network_id: "*",       // Any network (default: none)
     },
 
-    // Another network with more advanced options...
-    // advanced: {
-    // port: 8777,             // Custom port
-    // network_id: 1342,       // Custom network
-    // gas: 8500000,           // Gas sent with each transaction (default: ~6700000)
-    // gasPrice: 20000000000,  // 20 gwei (in wei) (default: 100 gwei)
-    // from: <address>,        // Account to send txs from (default: accounts[0])
-    // websockets: true        // Enable EventEmitter interface for web3 (default: false)
-    // },
+    live: {
+      provider: function() {
+        return new HDWalletProvider(mnemonic, "https://ropsten.infura.io/v3/af12ea4b3ec64a09bbfd67f9e1156fc7", 0)
+      },
+      network_id: 1,       // Live's id
+    },
 
     // Useful for deploying to a public network.
     // NB: It's important to wrap the provider as a function.
@@ -70,7 +67,7 @@ module.exports = {
       provider: function() {
         return new HDWalletProvider(mnemonic, "https://ropsten.infura.io/v3/af12ea4b3ec64a09bbfd67f9e1156fc7", 0)
       },
-      network_id: 3,       // Ropsten's id
+      network_id: 2,       // Ropsten's id
     },
 
   },

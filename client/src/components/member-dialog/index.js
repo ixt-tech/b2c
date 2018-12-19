@@ -13,39 +13,39 @@ class MemberDialog extends React.Component {
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleClose = this.handleClose.bind(this);
-    const member = this.props.member ? this.props.member : this.newMember();
     this.state = {
       isValid: false,
       modalOpen: false,
-      member: member
+      members: []
     };
   }
 
   handleChange(event, { name, value }) {
-    const member = this.state.member;
-    member[name] = value;
-    if(name == 'address' && value.length > 10) {
-      let code = value.substring(value.length - 8);
+    const lines = value.split('\n');
+    const members = [];
+    for(let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      const lineSplit = line.split(' ');
+
+      let member = {};
+      const address = lineSplit[0];
+      member.address = address;
+
+      let code = address.substring(address.length - 8);
       member.membershipNumber = code;
       member.invitationCode = code;
+      if(lineSplit.length > 1) {
+        member.referralInvitationCode = lineSplit[1];
+      }
+      members.push(member);
     }
-    this.setState({ member: member });
+    this.setState({ members: members });
   }
 
   handleSubmit = async (event) => {
-    this.props.postSubmit(this.state.member);
-    this.setState({ member: this.newMember() });
+    this.props.postSubmit(this.state.members);
+    this.setState({ members: [] });
     this.setState({ modalOpen: false });
-  }
-
-  newMember() {
-    return {
-      membershipNumber: '',
-      address: '',
-      products: '',
-      invitationCode: '',
-      referralInvitationCode: ''
-    };
   }
 
   handleOpen = () => this.setState({ modalOpen: true })
@@ -53,16 +53,11 @@ class MemberDialog extends React.Component {
 
   render() {
     return (
-      <Modal size='tiny' open={this.state.modalOpen} trigger={<Button positive onClick={this.handleOpen} onClose={this.handleClose}>Add Member</Button>}>
-        <Modal.Header>{this.state.member.id ? 'Edit' : 'Add'} Member</Modal.Header>
+      <Modal size='large' open={this.state.modalOpen} trigger={<Button positive onClick={this.handleOpen} onClose={this.handleClose}>Add Members</Button>}>
+        <Modal.Header>Add members</Modal.Header>
         <Modal.Content>
           <Form onSubmit={this.handleSubmit}>
-            <Form.Input placeholder='Wallet address' name='address' value={this.state.member.address} onChange={this.handleChange} />
-            <Form.Input placeholder='Referral Invitation Code' name='referralInvitationCode' value={this.state.member.referralInvitationCode} onChange={this.handleChange} />
-            <Form.Input placeholder='Invitation Code' name='invitationCode' value={this.state.member.invitationCode} onChange={this.handleChange} />
-            <Form.Input placeholder='Membership ID' name='membershipNumber' value={this.state.member.membershipNumber} onChange={this.handleChange} />
-            <Form.Input placeholder='Invitation Code' name='invitationCode' value={this.state.member.invitationCode} onChange={this.handleChange} />
-            <Form.Input placeholder='Products' name='products' value={this.state.member.productsCovered} onChange={this.handleChange} />
+            <Form.TextArea rows={15} placeholder='Wallet addresses' name='addresses' value={this.state.addresses} onChange={this.handleChange} />
           </Form>
         </Modal.Content>
         <Modal.Actions>

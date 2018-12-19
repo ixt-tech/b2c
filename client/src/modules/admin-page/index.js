@@ -24,8 +24,8 @@ class AdminPage extends React.Component {
   constructor(props) {
     super(props);
     this.getCellActions = this.getCellActions.bind(this);
+    this.addMembers = this.addMembers.bind(this);
     this.getMembers = this.getMembers.bind(this);
-    this.addMember = this.addMember.bind(this);
     this.depositPool = this.depositPool.bind(this);
   }
 
@@ -76,16 +76,20 @@ class AdminPage extends React.Component {
     }
   };
 
-  async addMember(member) {
+  async addMembers(members) {
     const web3 = this.state.web3;
     const contract = this.state.contract;
     const account = this.state.account;
-    await contract.addMember(
-      web3.utils.fromAscii(member.membershipNumber),
-      member.address,
-      web3.utils.fromAscii(member.invitationCode),
-      web3.utils.fromAscii(member.referralInvitationCode),
-      {from: account});
+
+    for(let member of members) {
+      contract.addMember(
+        web3.utils.fromAscii(member.membershipNumber),
+        member.address,
+        web3.utils.fromAscii(member.invitationCode),
+        web3.utils.fromAscii(member.referralInvitationCode),
+        {from: account});
+    }
+
     this.getMembers(web3, contract);
   }
 
@@ -148,7 +152,7 @@ class AdminPage extends React.Component {
 
         <h4 className='address'>Address: { this.state.account }</h4>
 
-        <MemberDialog account={this.state.account} postSubmit={this.addMember}/>
+        <MemberDialog account={this.state.account} postSubmit={this.addMembers}/>
         <DepositPoolDialog postSubmit={this.depositPool}/>
         <h4></h4>
 

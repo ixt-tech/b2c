@@ -21,7 +21,7 @@ class EventGrid extends React.Component {
     const contract = this.props.contract;
     const account = this.props.account;
 
-    const events = await contract.getPastEvents('NewMemberAuthorised', {
+    const events = await contract.getPastEvents('MemberAdded', {
       filter: { memberAddress: account },
       fromBlock: 0,
       toBlock: 'latest'
@@ -62,7 +62,7 @@ class EventGrid extends React.Component {
 
   getEventTitle(account, event, eventData) {
 
-    if(event.event == 'NewMemberAuthorised' && eventData.memberAddress == account) {
+    if(event.event == 'MemberAdded' && eventData.memberAddress == account) {
       return 'Your membership started';
     }
     return '';

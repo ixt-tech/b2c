@@ -14,9 +14,10 @@ class NonMember extends React.Component {
     return (
       <Container>
         <Segment textAlign='center'>
-          You are using an account which is not a member of IXT Protect yet.
+          You are using an Ethereum account which is not a member of IXT Protect or we are in the process of approving your application.
           <br/>
-          <Button positive>Sign Up</Button>
+          <br/>
+          <Button positive>Sign up</Button>
         </Segment>
       </Container>
     )

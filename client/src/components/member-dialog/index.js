@@ -54,7 +54,7 @@ class MemberDialog extends React.Component {
   render() {
     return (
       <Modal size='tiny' open={this.state.modalOpen} trigger={<Button positive onClick={this.handleOpen} onClose={this.handleClose}>Add Member</Button>}>
-        <Modal.Header>{this.state.member.id ? 'Edit' : 'New'} Member</Modal.Header>
+        <Modal.Header>{this.state.member.id ? 'Edit' : 'Add'} Member</Modal.Header>
         <Modal.Content>
           <Form onSubmit={this.handleSubmit}>
             <Form.Input placeholder='Wallet address' name='address' value={this.state.member.address} onChange={this.handleChange} />

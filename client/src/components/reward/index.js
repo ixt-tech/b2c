@@ -18,23 +18,31 @@ class Reward extends React.Component {
 
   constructor(props) {
     super(props);
+    this.reloadRewardBalance = this.reloadRewardBalance.bind(this);
     this.handleWithdraw = this.handleWithdraw.bind(this);
   }
 
   componentDidMount = async () => {
     const contract = await this.props.contract;
     const account = await this.props.account;
-    const member = await contract.members(account);
-    if(member.joinedTimestamp != 0) {
+    const member = await this.props.member;
+    if(member.stakeTimestamp != 0) {
       const rewardBalance = await contract.getRewardBalance(account);
       this.setState({rewardBalance: fromBn(rewardBalance)});
     }
   }
 
+  reloadRewardBalance = async () => {
+    const contract = await this.props.contract;
+    const account = await this.props.account;
+    const rewardBalance = await contract.getRewardBalance(account);
+    this.setState({rewardBalance: fromBn(rewardBalance)});
+  }
+
   handleWithdraw = async (event) => {
     const contract = await this.props.contract;
     await contract.claimRewards({from: this.props.account});
-    event.preventDefault();
+    this.reloadRewardBalance();
   }
 
   render() {

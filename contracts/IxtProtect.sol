@@ -10,19 +10,19 @@ import "./lib/ValidatorRole.sol";
 /// @notice Holds all events used by the IXTProtect contract
 contract IxtEvents {
 
-  event NewMemberAuthorised(
+  event MemberAdded(
     address indexed memberAddress,
     bytes32 indexed membershipNumber,
     bytes32 indexed invitationCode
   );
 
-  event NewMemberJoined(
+  event StakeDeposited(
     address indexed memberAddress,
     bytes32 indexed membershipNumber,
     uint256 stakeLevel
   );
 
-  event MemberInitiatedCancelMembership(
+  event StakeWithdrawn(
     address indexed memberThatCancelled,
     uint256 rewardAmount
   );
@@ -165,34 +165,34 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
 
   /*      Function modifiers      */
 
-  modifier userNotAuthorised(address memberAddress) {
+  modifier isNotMember(address memberAddress) {
     require(
-      members[memberAddress].authorisedTimestamp == 0,
-      "Member is already authorised."
+      members[memberAddress].addedTimestamp == 0,
+      "Already a member."
     );
     _;
   }
 
-  modifier userIsAuthorised(address memberAddress) {
+  modifier isMember(address memberAddress) {
     require(
-      members[memberAddress].authorisedTimestamp != 0,
-      "Member is not authorised."
+      members[memberAddress].addedTimestamp != 0,
+      "User is not a member."
     );
     _;
   }
 
-  modifier userNotJoined(address memberAddress) {
+  modifier notStaking(address memberAddress) {
     require(
-      members[memberAddress].joinedTimestamp == 0,
-      "Member has already joined."
+      members[memberAddress].stakeTimestamp == 0,
+      "Member is staking already."
     );
     _;
   }
 
-  modifier userIsJoined(address memberAddress) {
+  modifier staking(address memberAddress) {
     require(
-      members[memberAddress].joinedTimestamp != 0,
-      "Member has not joined."
+      members[memberAddress].stakeTimestamp != 0,
+      "Member is not staking."
     );
     _;
   }
@@ -201,8 +201,8 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
 
   /// @dev data structure used to track state on each member using the platform
   struct Member {
-    uint256 authorisedTimestamp;
-    uint256 joinedTimestamp;
+    uint256 addedTimestamp;
+    uint256 stakeTimestamp;
     uint256 startOfLoyaltyRewardEligibility;
     bytes32 membershipNumber;
     bytes32 invitationCode;
@@ -273,7 +273,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   /// @param _invitationCode should be associated with *this* member in order to apply invitation rewards
   /// @param _referralInvitationCode the invitation code of another member which is used to give the
 
-  function authoriseUser(
+  function addMember(
     bytes32 _membershipNumber,
     address _memberAddress,
     bytes32 _invitationCode,
@@ -281,16 +281,16 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   ) 
     public
     onlyValidator
-    userNotAuthorised(_memberAddress)
-    userNotJoined(_memberAddress)
+    isNotMember(_memberAddress)
+    notStaking(_memberAddress)
   {
     require(
       _memberAddress != address(0x0),
       "Member address was set to 0."
     );
     Member memory member = Member({
-      authorisedTimestamp: block.timestamp,
-      joinedTimestamp: 0,
+      addedTimestamp: block.timestamp,
+      stakeTimestamp: 0,
       startOfLoyaltyRewardEligibility: 0,
       membershipNumber: _membershipNumber,
       invitationCode: _invitationCode,
@@ -313,7 +313,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
       emit InvitationRewardGiven(rewardMemberAddress, _memberAddress, invitationReward);
     }
 
-    emit NewMemberAuthorised(_memberAddress, _membershipNumber, _invitationCode);
+    emit MemberAdded(_memberAddress, _membershipNumber, _invitationCode);
   }
 
   /// @notice Called by a member once they have been approved to join the scheme
@@ -321,31 +321,38 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   /// IXT token to be transferred by this contract
   /// @param _stakeLevel the staking level used by this member. Note this is not the staking *amount*.
   /// other member a reward upon *this* user joining.
-  function join(
+  function depositStake(
     StakeLevel _stakeLevel
   )
     public
     whenNotPaused()
-    userIsAuthorised(msg.sender)
-    userNotJoined(msg.sender)
+    isMember(msg.sender)
+    notStaking(msg.sender)
     isValidStakeLevel(_stakeLevel)
   {
     uint256 amountDeposited = depositInternal(msg.sender, ixtStakingLevels[uint256(_stakeLevel)], false);
     Member storage member = members[msg.sender];
-    member.joinedTimestamp = block.timestamp;
+    member.stakeTimestamp = block.timestamp;
     member.startOfLoyaltyRewardEligibility = block.timestamp;
-    emit NewMemberJoined(msg.sender, member.membershipNumber, amountDeposited);
+    /// @dev add this members invitation code to the mapping
+    registeredInvitationCodes[member.invitationCode] = msg.sender;
+    emit StakeDeposited(msg.sender, member.membershipNumber, amountDeposited);
   }
 
-  /// @notice Called by the member if they wish to cancel their membership
+  /// @notice Called by the member if they wish to withdraw the stake
   /// @notice This function will return all stake and eligible reward balance back to the user
-  function cancelMembership()
+  function withdrawStake()
     public
     whenNotPaused()
-    userIsJoined(msg.sender)
+    staking(msg.sender)
   {
-    uint256 refund = cancelMembershipInternal(msg.sender);
-    emit MemberInitiatedCancelMembership(msg.sender, refund);
+
+    uint256 amountRefunded = refundUserBalance(msg.sender);
+    delete registeredInvitationCodes[members[msg.sender].invitationCode];
+    Member storage member = members[msg.sender];
+    member.stakeTimestamp = 0x0;
+    member.startOfLoyaltyRewardEligibility = 0x0;
+    emit StakeWithdrawn(msg.sender, amountRefunded);
   }
 
   /// @notice Called by the member if they wish to claim the rewards they are eligible
@@ -353,7 +360,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   function claimRewards()
     public
     whenNotPaused()
-    userIsJoined(msg.sender)
+    staking(msg.sender)
   {
     uint256 rewardClaimed = claimRewardsInternal(msg.sender);
     emit MemberInitiatedClaimRewards(msg.sender, rewardClaimed);
@@ -373,7 +380,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   function getAccountBalance(address memberAddress)
     public
     view
-    userIsJoined(memberAddress)
+    staking(memberAddress)
     returns (uint256)
   {
     return getStakeBalance(memberAddress) +
@@ -386,7 +393,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   function getStakeBalance(address memberAddress)
     public
     view
-    userIsJoined(memberAddress)
+    staking(memberAddress)
     returns (uint256)
   {
     return members[memberAddress].stakeBalance;
@@ -398,7 +405,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   function getRewardBalance(address memberAddress)
     public
     view
-    userIsJoined(memberAddress)
+    staking(memberAddress)
     returns (uint256)
   {
     return getInvitationRewardBalance(memberAddress) +
@@ -411,7 +418,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   function getInvitationRewardBalance(address memberAddress)
     public
     view
-    userIsJoined(memberAddress)
+    staking(memberAddress)
     returns (uint256)
   {
     return members[memberAddress].invitationRewards;
@@ -423,7 +430,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   function getLoyaltyRewardBalance(address memberAddress)
     public
     view
-    userIsJoined(memberAddress)
+    staking(memberAddress)
     returns (uint256 loyaltyReward)
   {
     uint256 loyaltyPeriodSeconds = loyaltyPeriodDays * 1 days;
@@ -476,7 +483,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
   /// @param userAddress the address of the member that the admin wishes to remove
   function removeMember(address userAddress)
     public
-    userIsAuthorised(userAddress)
+    isMember(userAddress)
     onlyOwner
   {
     uint256 refund = cancelMembershipInternal(userAddress);
@@ -491,7 +498,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     /// @dev Refund and delete all members
     for (uint256 index = 0; index < membersArray.length; index++) {
       address memberAddress = membersArray[index];
-      bool memberJoined = members[memberAddress].joinedTimestamp != 0;
+      bool memberJoined = members[memberAddress].stakeTimestamp != 0;
       uint256 amountRefunded = memberJoined ? refundUserBalance(memberAddress) : 0;
 
       delete registeredInvitationCodes[members[memberAddress].invitationCode];
@@ -583,14 +590,15 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     uint256 claimsRefunded = claimRewardsInternal(memberAddress);
     uint256 stakeToRefund = member.stakeBalance;
 
-    bool userJoined = member.joinedTimestamp != 0;
-    if (stakeToRefund > 0 && userJoined) {
+    bool userStaking = member.stakeTimestamp != 0;
+    if (stakeToRefund > 0 && userStaking) {
       require(
         ixtToken.transfer(memberAddress, stakeToRefund),
         "Unable to withdraw this value of IXT."  
       );
       totalMemberBalance = SafeMath.sub(totalMemberBalance, stakeToRefund);
     }
+    member.stakeBalance = 0;
     return claimsRefunded + stakeToRefund;
   }
 

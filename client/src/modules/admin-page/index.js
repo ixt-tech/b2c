@@ -5,10 +5,13 @@ import {
 } from 'semantic-ui-react';
 import ReactDataGrid from 'react-data-grid';
 import MemberDialog from '../../components/member-dialog'
+import DepositPoolDialog from '../../components/deposit-pool-dialog'
+import AdminLevels from '../../components/admin-levels';
 
 import './styles.css';
 import getWeb3 from '../../utils/getWeb3';
 import IxtProtect from '../../contracts/IxtProtect.json';
+import IxtToken from '../../contracts/IxtToken.json';
 import truffleContract from 'truffle-contract';
 import Connecting from '../../components/connecting';
 import { fromBn, toBn } from '../../utils/number';
@@ -23,6 +26,7 @@ class AdminPage extends React.Component {
     this.getCellActions = this.getCellActions.bind(this);
     this.getMembers = this.getMembers.bind(this);
     this.addMember = this.addMember.bind(this);
+    this.depositPool = this.depositPool.bind(this);
   }
 
   componentDidMount = async () => {
@@ -38,6 +42,11 @@ class AdminPage extends React.Component {
       const Contract = truffleContract(IxtProtect);
       Contract.setProvider(web3.currentProvider);
       const contract = await Contract.deployed();
+
+      const IxtContract = truffleContract(IxtToken);
+      IxtContract.setProvider(web3.currentProvider);
+      const ixtAddress = await contract.ixtToken();
+      const ixtContract = await IxtContract.at(ixtAddress);
 
       await this.getMembers(web3, contract);
 
@@ -56,7 +65,7 @@ class AdminPage extends React.Component {
         { key: 'productsCovered', name: 'Products', width: 200 }
       ].map(c => ({ ...c, ...defaultProps }));
 
-      this.setState({ web3, account, contract, columns });
+      this.setState({ web3, account, contract, ixtContract, columns });
 
     } catch (error) {
       // Catch any errors for any of the above operations.
@@ -71,13 +80,27 @@ class AdminPage extends React.Component {
     const web3 = this.state.web3;
     const contract = this.state.contract;
     const account = this.state.account;
-    await contract.authoriseUser(
+    await contract.addMember(
       web3.utils.fromAscii(member.membershipNumber),
       member.address,
       web3.utils.fromAscii(member.invitationCode),
       web3.utils.fromAscii(member.referralInvitationCode),
       {from: account});
     this.getMembers(web3, contract);
+  }
+
+  async depositPool(deposit) {
+    const contract = this.state.contract;
+    const account = this.state.account;
+    const ixtContract = this.state.ixtContract;
+    await ixtContract.approve(
+      contract.address,
+      deposit * 10E7, {from: account}
+      );
+    await contract.depositPool(
+      deposit * 10E7,
+      {from: account}
+      );
   }
 
   async getMembers(web3, contract) {
@@ -88,7 +111,7 @@ class AdminPage extends React.Component {
       let m = await contract.members(address);
 
       let stakeBalance, loyaltyBalance, invitationBalance = 0;
-      if(m.joinedTimestamp.toNumber() > 0) {
+      if(m.stakeTimestamp.toNumber() > 0) {
         stakeBalance = fromBn(await contract.getStakeBalance(address));
         loyaltyBalance = fromBn(await contract.getLoyaltyRewardBalance(address));
         invitationBalance = fromBn(await contract.getInvitationRewardBalance(address));
@@ -98,8 +121,8 @@ class AdminPage extends React.Component {
         membershipNumber: web3.utils.toAscii(m.membershipNumber),
         memberAddress: address,
         productsCovered: '',
-        addedTimestamp: fromTimestamp(m.authorisedTimestamp),
-        stakedTimestamp: fromTimestamp(m.joinedTimestamp),
+        addedTimestamp: fromTimestamp(m.addedTimestamp),
+        stakedTimestamp: fromTimestamp(m.stakeTimestamp),
         invitationCode: web3.utils.toAscii(m.invitationCode),
         stakeBalance: stakeBalance,
         loyaltyBalance: loyaltyBalance,
@@ -122,8 +145,17 @@ class AdminPage extends React.Component {
     return (
       <Container>
         <h1>IXT Protect Admin</h1>
+
         <h4 className='address'>Address: { this.state.account }</h4>
-        <MemberDialog account={this.state.account} web3={this.state.web3} contract={this.state.contract} postSubmit={this.addMember}/>
+
+        <MemberDialog account={this.state.account} postSubmit={this.addMember}/>
+        <DepositPoolDialog postSubmit={this.depositPool}/>
+        <h4></h4>
+
+        <AdminLevels
+          contract={ this.state.contract }
+        />
+
         <h2>Members</h2>
         <ReactDataGrid
           columns={this.state.columns}
@@ -132,6 +164,7 @@ class AdminPage extends React.Component {
           minHeight={500}
           getCellActions={this.getCellActions}
         />
+
       </Container>
     );
   }

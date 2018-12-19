@@ -19,16 +19,16 @@ contract IxtEvents {
   event StakeDeposited(
     address indexed memberAddress,
     bytes32 indexed membershipNumber,
-    uint256 stakeLevel
+    uint256 stakeAmount
   );
 
   event StakeWithdrawn(
-    address indexed memberThatCancelled,
-    uint256 rewardAmount
+    address indexed memberAddress,
+    uint256 stakeAmount
   );
 
-  event MemberInitiatedClaimRewards(
-    address indexed member,
+  event RewardClaimed(
+    address indexed memberAddress,
     uint256 rewardAmount
   );
 
@@ -347,12 +347,12 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     staking(msg.sender)
   {
 
-    uint256 amountRefunded = refundUserBalance(msg.sender);
+    uint256 stakeAmount = refundUserBalance(msg.sender);
     delete registeredInvitationCodes[members[msg.sender].invitationCode];
     Member storage member = members[msg.sender];
-    member.stakeTimestamp = 0x0;
-    member.startOfLoyaltyRewardEligibility = 0x0;
-    emit StakeWithdrawn(msg.sender, amountRefunded);
+    member.stakeTimestamp = 0;
+    member.startOfLoyaltyRewardEligibility = 0;
+    emit StakeWithdrawn(msg.sender, stakeAmount);
   }
 
   /// @notice Called by the member if they wish to claim the rewards they are eligible
@@ -363,7 +363,7 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     staking(msg.sender)
   {
     uint256 rewardClaimed = claimRewardsInternal(msg.sender);
-    emit MemberInitiatedClaimRewards(msg.sender, rewardClaimed);
+    emit RewardClaimed(msg.sender, rewardClaimed);
   }
 
   /*      (getter functions)      */

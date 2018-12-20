@@ -569,7 +569,9 @@ contract IxtProtect is IxtEvents, RoleManager, StakeManager, RewardManager {
     returns
     (uint256 amountRefunded)
   {
-    amountRefunded = refundUserBalance(memberAddress);
+    if(members[memberAddress].stakeTimestamp != 0) {
+      amountRefunded = refundUserBalance(memberAddress);
+    }
 
     delete registeredInvitationCodes[members[memberAddress].invitationCode];
 

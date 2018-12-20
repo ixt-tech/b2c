@@ -16,6 +16,7 @@ class MemberDialog extends React.Component {
     this.state = {
       isValid: false,
       modalOpen: false,
+      remove: false,
       members: []
     };
   }
@@ -52,9 +53,10 @@ class MemberDialog extends React.Component {
   handleClose = () => this.setState({ modalOpen: false })
 
   render() {
+    const title = this.props.remove ? 'Remove members' : 'Add members';
     return (
-      <Modal size='large' open={this.state.modalOpen} trigger={<Button positive onClick={this.handleOpen} onClose={this.handleClose}>Add members</Button>}>
-        <Modal.Header>Add members</Modal.Header>
+      <Modal size='large' open={this.state.modalOpen} trigger={<Button positive={!this.props.remove} negative={this.props.remove} onClick={this.handleOpen} onClose={this.handleClose}>{title}</Button>}>
+        <Modal.Header>{title}</Modal.Header>
         <Modal.Content>
           <Form onSubmit={this.handleSubmit}>
             <Form.TextArea rows={15} placeholder='Wallet addresses' name='addresses' value={this.state.addresses} onChange={this.handleChange} />

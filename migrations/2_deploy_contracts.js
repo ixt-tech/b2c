@@ -4,6 +4,7 @@ var IxtToken = artifacts.require("./IxtToken.sol");
 module.exports = async function(deployer, network, accounts) {
 
   console.log('Deploying to ' + network + '...');
+  console.log('ACCOUNTS', accounts);
 
   const validator = accounts[0];
   const loyaltyPeriod = "90";

@@ -30,6 +30,19 @@ const infuraKey = "af12ea4b3ec64a09bbfd67f9e1156fc7"
 const fs = require("fs")
 const mnemonic = fs.readFileSync(".secret").toString().trim()
 
+const privateKeys = [
+  "e3317f2d3fefbef0cc57d683239ccfa2bb7bb01e3a4e7985659830977941aa07",
+  "4b2d989a66fe41ad81b1f3b3812e8b6e0a75657e6f3fe906a5425dc97c183304",
+  "8f73351cbd4689f2e48f3ec2a4a8135f6dd3a56bfa21e3dca71f0464ea5cdd5a",
+  "5e46142e136e95f7d5c1dcaf6d255abf2035b55fcf03a9e4eeef0933e34960d1",
+  "817177bbad7dd496fa8078b15791054e1f0964609aedbba748d90b682a7e6979",
+  "3b9fab24e9815c86a12a741a42cd391edf0aa6d85534a3ed275b93ec89a4f9ea",
+  "9140d5b2162580615f2672e235adc5d458b2f8626d98ce49325267bdcf8dba1d",
+  "45225d0f4d1a2d5c4ccfb07843453306193db0cdb97d2678fb9346100745b292",
+  "a9f02278735c17098cebc8ff67507ffd3dbcc276f4295b618e92cff1621ae8aa",
+  "5f318c03e0cca55b4a55769131308d7135b8981f057aab5db1e49b33dbd54413"
+];
+
 module.exports = {
   /**
    * Networks define how you connect to your ethereum client and let you set the
@@ -65,7 +78,7 @@ module.exports = {
     // NB: It's important to wrap the provider as a function.
     ropsten: {
       provider: function() {
-        return new HDWalletProvider(mnemonic, "https://ropsten.infura.io/v3/af12ea4b3ec64a09bbfd67f9e1156fc7", 0)
+        return new HDWalletProvider(privateKeys, "https://ropsten.infura.io/v3/af12ea4b3ec64a09bbfd67f9e1156fc7", 0, 10)
       },
       network_id: 2,       // Ropsten's id
     },

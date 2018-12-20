@@ -27,6 +27,7 @@ class AdminPage extends React.Component {
     super(props);
     this.getCellActions = this.getCellActions.bind(this);
     this.addMembers = this.addMembers.bind(this);
+    this.removeMembers = this.removeMembers.bind(this);
     this.getMembers = this.getMembers.bind(this);
     this.depositPool = this.depositPool.bind(this);
     this.withdrawPool = this.withdrawPool.bind(this);
@@ -86,11 +87,25 @@ class AdminPage extends React.Component {
     const account = this.state.account;
 
     for(let member of members) {
-      contract.addMember(
+      await contract.addMember(
         web3.utils.fromAscii(member.membershipNumber),
         member.address,
         web3.utils.fromAscii(member.invitationCode),
         web3.utils.fromAscii(member.referralInvitationCode),
+        {from: account});
+    }
+
+    this.getMembers(web3, contract);
+  }
+
+  async removeMembers(members) {
+    const web3 = this.state.web3;
+    const contract = this.state.contract;
+    const account = this.state.account;
+
+    for(let member of members) {
+      await contract.removeMember(
+        member.address,
         {from: account});
     }
 
@@ -168,6 +183,7 @@ class AdminPage extends React.Component {
 
         <MemberDialog account={ this.state.account } postSubmit={ this.addMembers }/>
         <DepositPoolDialog postSubmit={ this.depositPool }/>
+        <MemberDialog remove={true} account={ this.state.account } postSubmit={ this.removeMembers }/>
         <WithdrawPoolDialog postSubmit={ this.withdrawPool }/>
         <Pause contract={ this.state.contract } account={ this.state.account }/>
         <h4></h4>

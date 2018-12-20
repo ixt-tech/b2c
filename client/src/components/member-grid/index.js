@@ -38,7 +38,7 @@ class MemberGrid extends React.Component {
         <ReactDataGrid
           columns={this.state.columns}
           rowGetter={i => this.props.members[i]}
-          rowsCount={30}
+          rowsCount={this.props.members.length}
           minHeight={500}
           enableCellSelect={true}
         />

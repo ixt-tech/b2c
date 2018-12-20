@@ -1,16 +1,13 @@
 import React from 'react';
-import {
-  Divider,
-  Grid,
-  Segment,
-} from 'semantic-ui-react';
+import ReactDataGrid from 'react-data-grid';
+
 import './styles.css';
 import { fromBn } from "../../utils/number";
 import { fromTimestamp } from '../../utils/date';
 
 class AdminEventGrid extends React.Component {
 
-  state = { rows: [] }
+  state = { columns: [], rows: [] }
 
   constructor(props) {
     super(props);
@@ -19,6 +16,15 @@ class AdminEventGrid extends React.Component {
   componentDidMount = async () => {
     const web3 = this.props.web3;
     const contract = this.props.contract;
+
+    const defaultProps = {
+      resizable: true
+    };
+    const columns = [
+      { key: 'title', name: 'Event', width: 600 },
+      { key: 'timestamp', name: 'Time', width: 150 },
+      { key: 'transactionHash', name: 'Transaction hash', width: 600 }
+    ].map(c => ({ ...c, ...defaultProps }));
 
     const events = await contract.getPastEvents('allEvents', {
       filter: { },
@@ -30,27 +36,22 @@ class AdminEventGrid extends React.Component {
       const row = await this.generateRow(web3, rowIndex, events[rowIndex]);
       if(row) rows.push(row);
     }
-    this.setState({rows: rows});
+    this.setState({columns: columns, rows: rows});
   }
 
   render() {
+    const columns = this.state.columns;
+    const rows = this.state.rows;
     return (
       <div>
         <h2>Events</h2>
-        <Grid>
-          <Grid.Row className='event-header'>
-            <Grid.Column width={4}>Event</Grid.Column>
-            <Grid.Column width={3}>Time</Grid.Column>
-            <Grid.Column width={4}>Transaction</Grid.Column>
-          </Grid.Row>
-          { this.state.rows.map((row) => (
-          <Grid.Row className='event-row' children={this.state.rows} key={row.key}>
-            <Grid.Column width={4}>{ row.title }</Grid.Column>
-            <Grid.Column width={3}>{ fromTimestamp(row.timestamp) }</Grid.Column>
-            <Grid.Column width={4}>{ row.transactionHash }</Grid.Column>
-          </Grid.Row>
-          ))}
-        </Grid>
+        <ReactDataGrid
+          columns={columns}
+          rowGetter={i => rows[i]}
+          rowsCount={rows.length}
+          minHeight={500}
+          enableCellSelect={true}
+        />
       </div>
     );
   }
@@ -61,23 +62,47 @@ class AdminEventGrid extends React.Component {
     const block = await web3.eth.getBlock(blockNumber);
     let row = {
       key: rowIndex,
-      timestamp: block.timestamp,
+      timestamp: fromTimestamp(block.timestamp),
       transactionHash: event.transactionHash,
     };
     if(event.event == 'MemberAdded') {
-      row.title = 'Your membership started';
+      row.title = 'New member added ' + eventData.memberAddress;
       return row;
     } else if(event.event == 'StakeDeposited') {
-      row.title = 'You staked ' + fromBn(eventData.stakeAmount);
+      row.title = 'Member ' + eventData.memberAddress + ' staked ' + fromBn(eventData.stakeAmount) + ' IXT';
       return row;
     } else if(event.event == 'StakeWithdrawn') {
-      row.title = 'You withdrew your stake of ' + fromBn(eventData.stakeAmount);
-      return row;
-    } else if(event.event == 'InvitationRewardGiven') {
-      row.title = 'You received an invitation reward of ' + fromBn(eventData.rewardAmount);
+      row.title = 'Member ' + eventData.memberAddress + ' withdrew ' + fromBn(eventData.stakeAmount) + ' IXT';
       return row;
     } else if(event.event == 'RewardClaimed') {
-      row.title = 'You claimed rewards of ' + fromBn(eventData.rewardAmount);
+      row.title = 'Member ' + eventData.memberAddress + ' claimed reward of ' + fromBn(eventData.stakeAmount) + ' IXT';
+      return row;
+    } else if(event.event == 'InvitationRewardGiven') {
+      row.title = 'Member ' + eventData.memberReceivingReward + ' received ' + fromBn(eventData.rewardAmount) + ' IXT for inviting ' + eventData.memberGivingReward;
+      return row;
+    } else if(event.event == 'PoolDeposit') {
+      row.title = 'Deposited ' + fromBn(eventData.amount) + ' IXT to pool';
+      return row;
+    } else if(event.event == 'PoolWithdraw') {
+      row.title = 'Withdrew ' + fromBn(eventData.amount) + ' IXT from pool';
+      return row;
+    } else if(event.event == 'AdminRemovedMember') {
+      row.title = 'Member removed ' + eventData.userAddress + ' and refunded ' + eventData.refundIssued + ' IXT';
+      return row;
+    } else if(event.event == 'MemberDrained') {
+      row.title = 'Member ' + eventData.memberAddress + ' drained and was refunded ' + fromBn(eventData.amountRefunded) + ' IXT';
+      return row;
+    } else if(event.event == 'PoolDrained') {
+      row.title = 'The member balance was drained of ' + fromBn(eventData.amountRefunded) + ' IXT';
+      return row;
+    } else if(event.event == 'ContractDrained') {
+      row.title = 'The pool was drained';
+      return row;
+    } else if(event.event == 'InvitationRewardChanged') {
+      row.title = 'The invitation reward was changed to ' + fromBn(eventData.newInvitationReward) + ' IXT';
+      return row;
+    } else if(event.event == 'LoyaltyRewardChanged') {
+      row.title = 'The loyalty reward was changed to ' + eventData.newLoyaltyRewardAmount + ' %';
       return row;
     }
     return undefined;

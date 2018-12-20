@@ -70,7 +70,7 @@ class AdminPage extends React.Component {
     const account = this.state.account;
 
     for(let member of members) {
-      await contract.addMember(
+      contract.addMember(
         web3.utils.fromAscii(member.membershipNumber),
         member.address,
         web3.utils.fromAscii(member.invitationCode),
@@ -130,9 +130,8 @@ class AdminPage extends React.Component {
       let loyaltyBalance = 0;
       let invitationBalance = 0;
       if(m.stakeTimestamp.toNumber() > 0) {
-        stakeBalance = fromBn(await contract.getStakeBalance(address));
         loyaltyBalance = fromBn(await contract.getLoyaltyRewardBalance(address));
-        invitationBalance = fromBn(await contract.getInvitationRewardBalance(address));
+        invitationBalance = fromBn(m.invitationBalance);
       }
 
       let member = {
@@ -142,9 +141,9 @@ class AdminPage extends React.Component {
         addedTimestamp: fromTimestamp(m.addedTimestamp),
         stakedTimestamp: fromTimestamp(m.stakeTimestamp),
         invitationCode: web3.utils.toAscii(m.invitationCode),
-        stakeBalance: stakeBalance,
+        stakeBalance: fromBn(m.stakeBalance),
         loyaltyBalance: loyaltyBalance,
-        invitationBalance: invitationBalance,
+        invitationBalance: invitationBalance
       }
       members.push(member);
     }
@@ -173,7 +172,7 @@ class AdminPage extends React.Component {
         <h4></h4>
         <MemberGrid members={ this.state.members } />
         <h4></h4>
-        <AdminEventGrid web3={ this.state.web3 } contract={ this.state.contract } />
+        <AdminEventGrid web3={this.state.web3} contract={ this.state.contract } />
 
       </Container>
     );

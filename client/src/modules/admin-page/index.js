@@ -3,12 +3,13 @@ import {
   Container,
   Divider,
 } from 'semantic-ui-react';
-import ReactDataGrid from 'react-data-grid';
 import MemberDialog from '../../components/member-dialog'
 import DepositPoolDialog from '../../components/deposit-pool-dialog'
 import WithdrawPoolDialog from '../../components/withdraw-pool-dialog'
 import AdminLevels from '../../components/admin-levels';
 import Pause from '../../components/pause';
+import MemberGrid from '../../components/member-grid';
+import AdminEventGrid from '../../components/admin-event-grid';
 
 import './styles.css';
 import getWeb3 from '../../utils/getWeb3';
@@ -25,7 +26,6 @@ class AdminPage extends React.Component {
 
   constructor(props) {
     super(props);
-    this.getCellActions = this.getCellActions.bind(this);
     this.addMembers = this.addMembers.bind(this);
     this.removeMembers = this.removeMembers.bind(this);
     this.getMembers = this.getMembers.bind(this);
@@ -52,28 +52,11 @@ class AdminPage extends React.Component {
       const ixtAddress = await contract.ixtToken();
       const ixtContract = await IxtContract.at(ixtAddress);
 
-      await this.getMembers(web3, contract);
+      this.getMembers(web3, contract);
 
-      const defaultProps = {
-        resizable: true,
-        filterable: true
-      };
-      const columns = [
-        { key: 'membershipNumber', name: 'Member ID', width: 100 },
-        { key: 'memberAddress', name: 'Wallet address', width: 400 },
-        { key: 'addedTimestamp', name: 'Added at', width: 150 },
-        { key: 'stakedTimestamp', name: 'Staked at', width: 150 },
-        { key: 'stakeBalance', name: 'Stake', width: 100 },
-        { key: 'invitationBalance', name: 'Invitations', width: 100 },
-        { key: 'loyaltyBalance', name: 'Loyalty', width: 100 },
-        { key: 'invitationCode', name: 'Invitation code', width: 100 },
-        { key: 'productsCovered', name: 'Products', width: 200 }
-      ].map(c => ({ ...c, ...defaultProps }));
-
-      this.setState({ web3, account, contract, ixtContract, columns });
+      this.setState({ web3, account, contract, ixtContract });
 
     } catch (error) {
-      // Catch any errors for any of the above operations.
       alert(
         `Failed to load your IXT Protect account. You must connect with your account you registered with.`
       );
@@ -143,7 +126,9 @@ class AdminPage extends React.Component {
       let address = await contract.membersArray(i);
       let m = await contract.members(address);
 
-      let stakeBalance, loyaltyBalance, invitationBalance = 0;
+      let stakeBalance = 0;
+      let loyaltyBalance = 0;
+      let invitationBalance = 0;
       if(m.stakeTimestamp.toNumber() > 0) {
         stakeBalance = fromBn(await contract.getStakeBalance(address));
         loyaltyBalance = fromBn(await contract.getLoyaltyRewardBalance(address));
@@ -166,10 +151,6 @@ class AdminPage extends React.Component {
     this.setState({ members });
   }
 
-  getCellActions(column, row) {
-    return null;
-  }
-
   render() {
     if (!this.state.web3) {
       return <Connecting />;
@@ -188,18 +169,11 @@ class AdminPage extends React.Component {
         <Pause contract={ this.state.contract } account={ this.state.account }/>
         <h4></h4>
 
-        <AdminLevels
-          contract={ this.state.contract }
-        />
-
-        <h2>Members</h2>
-        <ReactDataGrid
-          columns={this.state.columns}
-          rowGetter={i => this.state.members[i]}
-          rowsCount={30}
-          minHeight={500}
-          getCellActions={this.getCellActions}
-        />
+        <AdminLevels contract={ this.state.contract } />
+        <h4></h4>
+        <MemberGrid members={ this.state.members } />
+        <h4></h4>
+        <AdminEventGrid web3={ this.state.web3 } contract={ this.state.contract } />
 
       </Container>
     );

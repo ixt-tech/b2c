@@ -17,7 +17,16 @@ module.exports = async function(deployer, network, accounts) {
   ];
   const ixtTokenAddress = "0xfca47962d45adfdfd1ab2d972315db4ce7ccf094";
 
-  if (network != "live") {
+  if (network == "live" || network == "kovan") {
+    deployer.deploy(
+      IxtProtect,
+      validator,
+      loyaltyPeriod,
+      ixtTokenAddress,
+      invitationReward,
+      loyaltyRewardPercentage,
+      ixtStakingLevels);
+  } else {
     deployer.deploy(IxtToken).then(function() {
       return deployer.deploy(
         IxtProtect,
@@ -36,16 +45,6 @@ module.exports = async function(deployer, network, accounts) {
       }
       console.log('Dev mode, deployed ERC20 to ' + ixtToken.address + ' contract as well and allocated tokens');
     });
-  } else {
-    deployer.deploy(
-      IxtProtect,
-      validator,
-      loyaltyPeriod,
-      ixtTokenAddress,
-      invitationReward,
-      loyaltyRewardPercentage,
-      ixtStakingLevels
-    );
   }
 
 };

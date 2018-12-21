@@ -48,8 +48,8 @@ class Stake extends React.Component {
     const ixtContract = await this.props.ixtContract;
     const stake = this.state.stake;
     const stakeAmount = this.options[stake].key;
-    await ixtContract.approve(contract.address, stakeAmount * 10E7, {from: this.props.account});
-    await contract.depositStake(stake, {from: this.props.account})
+    ixtContract.approve(contract.address, stakeAmount * 10E7, {from: this.props.account});
+    contract.depositStake(stake, {from: this.props.account})
     this.reloadMember();
   }
 

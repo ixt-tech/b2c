@@ -28,14 +28,12 @@ const HDWalletProvider = require("truffle-hdwallet-provider");
 const infuraKey = "af12ea4b3ec64a09bbfd67f9e1156fc7";
 
 const fs = require("fs");
-let fileContent = fs.readFileSync(".secret").toString().trim();
+let fileContent = fs.readFileSync(".test-priv-keys").toString().trim();
 const privateKeys = [];
 fileContent.split(/\n/).forEach(function(key) {
   privateKeys.push(key);
 });
-
-console.log(privateKeys);
-
+let mnemonic = fs.readFileSync(".secret").toString().trim();
 module.exports = {
   /**
    * Networks define how you connect to your ethereum client and let you set the
@@ -65,15 +63,23 @@ module.exports = {
         return new HDWalletProvider(mnemonic, "https://mainnet.infura.io/v3/af12ea4b3ec64a09bbfd67f9e1156fc7", 0)
       },
       network_id: 1,       // Live's id
+      gas: 7900000,
+      gasLimit: 20000000,
+      timeoutBlocks: 200
     },
 
-    // Useful for deploying to a public network.
-    // NB: It's important to wrap the provider as a function.
     ropsten: {
       provider: function() {
         return new HDWalletProvider(privateKeys, "https://ropsten.infura.io/v3/af12ea4b3ec64a09bbfd67f9e1156fc7", 0, 10)
       },
       network_id: 2,       // Ropsten's id
+    },
+
+    kovan: {
+      provider: function() {
+        return new HDWalletProvider(mnemonic, "https://kovan.infura.io/v3/af12ea4b3ec64a09bbfd67f9e1156fc7")
+      },
+      network_id: 3,       // Kovan's id
     },
 
   },

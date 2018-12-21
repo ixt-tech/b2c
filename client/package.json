@@ -23,7 +23,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "deploy-uat": "aws s3 sync build/ s3://uat.protect.ixt.global",
-    "deploy-production": "aws s3 sync build/ s3://protect.ixt.global",
+    "deploy-live": "aws s3 sync build/ s3://protect.ixt.global",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

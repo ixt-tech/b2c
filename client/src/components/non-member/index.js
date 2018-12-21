@@ -2,9 +2,7 @@ import React from 'react';
 import {
   Container,
   Button,
-  Segment,
-  Header,
-  Icon,
+  Segment
 } from 'semantic-ui-react';
 import './styles.css';
 

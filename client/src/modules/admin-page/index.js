@@ -19,10 +19,11 @@ import truffleContract from 'truffle-contract';
 import Connecting from '../../components/connecting';
 import { fromBn, toBn } from '../../utils/number';
 import { fromTimestamp } from '../../utils/date';
+import NonAdmin from "../../components/non-admin";
 
 class AdminPage extends React.Component {
 
-  state = { web3: null, accounts: null, contract: null, members: [], columns: [] };
+  state = { web3: null, accounts: null, contract: null, isAdmin: false, members: [], columns: [], isAdmin: false };
 
   constructor(props) {
     super(props);
@@ -46,6 +47,7 @@ class AdminPage extends React.Component {
       const Contract = truffleContract(IxtProtect);
       Contract.setProvider(web3.currentProvider);
       const contract = await Contract.deployed();
+      const isAdmin = await contract.isOwner({from: account});
 
       const IxtContract = truffleContract(IxtToken);
       IxtContract.setProvider(web3.currentProvider);
@@ -54,7 +56,7 @@ class AdminPage extends React.Component {
 
       this.getMembers(web3, contract);
 
-      this.setState({ web3, account, contract, ixtContract });
+      this.setState({ web3, account, contract, ixtContract, isAdmin: isAdmin });
 
     } catch (error) {
       alert(
@@ -99,11 +101,11 @@ class AdminPage extends React.Component {
     const contract = this.state.contract;
     const account = this.state.account;
     const ixtContract = this.state.ixtContract;
-    await ixtContract.approve(
+    ixtContract.approve(
       contract.address,
       amount * 10E7, {from: account}
     );
-    await contract.depositPool(
+    contract.depositPool(
       amount * 10E7,
       {from: account}
     );
@@ -113,7 +115,7 @@ class AdminPage extends React.Component {
     const contract = this.state.contract;
     const account = this.state.account;
     const ixtContract = this.state.ixtContract;
-    await contract.withdrawPool(
+    contract.withdrawPool(
       amount * 10E7,
       {from: account}
     );
@@ -153,6 +155,9 @@ class AdminPage extends React.Component {
   render() {
     if (!this.state.web3) {
       return <Connecting />;
+    }
+    if (!this.state.isAdmin) {
+      return <NonAdmin />;
     }
 
     return (

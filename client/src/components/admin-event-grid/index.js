@@ -1,5 +1,7 @@
 import React from 'react';
-import ReactDataGrid from 'react-data-grid';
+import ReactTable from "react-table";
+import 'react-table/react-table.css'
+import matchSorter from 'match-sorter'
 
 import './styles.css';
 import { fromBn } from "../../utils/number";
@@ -17,14 +19,6 @@ class AdminEventGrid extends React.Component {
     const web3 = this.props.web3;
     const contract = this.props.contract;
 
-    const defaultProps = {
-      resizable: true
-    };
-    const columns = [
-      { key: 'title', name: 'Event', width: 600 },
-      { key: 'timestamp', name: 'Time', width: 150 },
-      { key: 'transactionHash', name: 'Transaction hash', width: 600 }
-    ].map(c => ({ ...c, ...defaultProps }));
     const events = await contract.getPastEvents('allEvents', {
       fromBlock: 6927652, // live contract deployed
       toBlock: 'latest'
@@ -35,22 +29,53 @@ class AdminEventGrid extends React.Component {
       const row = await this.generateRow(web3, rowIndex, events[rowIndex]);
       if(row) rows.push(row);
     }
-    this.setState({columns: columns, rows: rows});
+    this.setState({rows: rows});
   }
 
   render() {
-    const columns = this.state.columns;
-    const rows = this.state.rows;
+    const data = this.state.rows;
     return (
       <div>
-        <h2>Events</h2>
-        <ReactDataGrid
-          columns={columns}
-          rowGetter={i => rows[i]}
-          rowsCount={rows.length}
-          minHeight={500}
-          enableCellSelect={true}
+        <h2>Members</h2>
+        <ReactTable
+          data={data}
+          filterable
+          defaultFilterMethod={(filter, row) =>
+            String(row[filter.id]) === filter.value}
+          columns={[
+            {
+              Header: 'Event',
+              accessor: 'title',
+              width: 600,
+              filterMethod: (filter, rows) =>
+                matchSorter(rows, filter.value, { keys: ["title"] }),
+              filterAll: true
+            },
+            {
+              Header: 'Time',
+              accessor: 'timestamp',
+              width: 150,
+              filterMethod: (filter, rows) =>
+                matchSorter(rows, filter.value, { keys: ["timestamp"] }),
+              filterAll: true
+            },
+            {
+              Header: 'Transaction hash',
+              accessor: 'transactionHash',
+              width: 600,
+            }
+          ]}
+          defaultSorted={[
+            {
+              id: "timestamp",
+              desc: true
+            }
+          ]}
+          defaultPageSize={20}
+          pageSizeOptions={[20, 50, 100, 200, 300]}
+          className="-striped"
         />
+
       </div>
     );
   }

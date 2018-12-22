@@ -1,7 +1,7 @@
 import React from 'react';
-import ReactDataGrid from 'react-data-grid';
-import { Toolbar, Data, Filters } from "react-data-grid-addons";
-
+import ReactTable from "react-table";
+import 'react-table/react-table.css'
+import matchSorter from 'match-sorter'
 import './styles.css';
 
 class MemberGrid extends React.Component {
@@ -12,35 +12,78 @@ class MemberGrid extends React.Component {
     super(props);
   }
 
-  componentDidMount = async () => {
-    const defaultProps = {
-      resizable: true
-    };
-    const columns = [
-      { key: 'membershipNumber', name: 'Member ID', width: 100 },
-      { key: 'memberAddress', name: 'Wallet address', width: 400 },
-      { key: 'addedTimestamp', name: 'Added at', width: 150 },
-      { key: 'stakedTimestamp', name: 'Staked at', width: 150 },
-      { key: 'stakeBalance', name: 'Stake', width: 100 },
-      { key: 'invitationBalance', name: 'Invitations', width: 100 },
-      { key: 'loyaltyBalance', name: 'Loyalty', width: 100 },
-      { key: 'invitationCode', name: 'Invitation code', width: 100 },
-      { key: 'productsCovered', name: 'Products', width: 200 }
-    ].map(c => ({ ...c, ...defaultProps }));
-
-    this.setState({ columns: columns });
-  }
-
   render() {
+    const data = this.props.members;
     return (
       <div>
         <h2>Members</h2>
-        <ReactDataGrid
-          columns={this.state.columns}
-          rowGetter={i => this.props.members[i]}
-          rowsCount={this.props.members.length}
-          minHeight={500}
-          enableCellSelect={true}
+        <ReactTable
+          data={data}
+          filterable
+          defaultFilterMethod={(filter, row) =>
+            String(row[filter.id]) === filter.value}
+          columns={[
+            {
+              Header: 'Member ID',
+              accessor: 'membershipNumber',
+              width: 100,
+              filterMethod: (filter, rows) =>
+                matchSorter(rows, filter.value, { keys: ["membershipNumber"] }),
+              filterAll: true
+            },
+            {
+              Header: 'Wallet address',
+              accessor: 'memberAddress',
+              width: 400,
+              filterMethod: (filter, rows) =>
+                matchSorter(rows, filter.value, { keys: ["memberAddress"] }),
+              filterAll: true
+            },
+            {
+              Header: 'Added at',
+              accessor: 'addedTimestamp',
+              width: 150,
+            },
+            {
+              Header: 'Staked at',
+              accessor: 'stakedTimestamp',
+              width: 100,
+            },
+            {
+              Header: 'Stake',
+              accessor: 'stakeBalance',
+              width: 100,
+            },
+            {
+              Header: 'Invitation reward',
+              accessor: 'invitationBalance',
+              width: 100,
+            },
+            {
+              Header: 'Loyalty reward',
+              accessor: 'loyaltyBalance',
+              width: 100,
+            },
+            {
+              Header: 'Invitation code',
+              accessor: 'invitationCode',
+              width: 100,
+              filterMethod: (filter, rows) =>
+                matchSorter(rows, filter.value, { keys: ["invitationCode"] }),
+              filterAll: true
+            },
+            {
+              Header: 'Products',
+              accessor: 'productsCovered',
+              width: 200,
+              filterMethod: (filter, rows) =>
+                matchSorter(rows, filter.value, { keys: ["productsCovered"] }),
+              filterAll: true
+            },
+          ]}
+          defaultPageSize={20}
+          pageSizeOptions={[20, 50, 100, 200, 300]}
+          className="-striped"
         />
       </div>
     );

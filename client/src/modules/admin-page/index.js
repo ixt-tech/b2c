@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Container,
   Divider,
+  TextArea,
 } from 'semantic-ui-react';
 import MemberDialog from '../../components/member-dialog'
 import DepositPoolDialog from '../../components/deposit-pool-dialog'
@@ -133,7 +134,7 @@ class AdminPage extends React.Component {
       let invitationBalance = 0;
       if(m.stakeTimestamp.toNumber() > 0) {
         loyaltyBalance = fromBn(await contract.getLoyaltyRewardBalance(address));
-        invitationBalance = fromBn(m.invitationBalance);
+        invitationBalance = fromBn(m.invitationRewards);
       }
 
       let member = {
@@ -177,7 +178,7 @@ class AdminPage extends React.Component {
         <h4></h4>
         <MemberGrid members={ this.state.members } />
         <h4></h4>
-        <AdminEventGrid web3={this.state.web3} contract={ this.state.contract } />
+        <AdminEventGrid web3={ this.state.web3 } contract={ this.state.contract } />
 
       </Container>
     );

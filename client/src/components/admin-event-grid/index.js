@@ -25,12 +25,11 @@ class AdminEventGrid extends React.Component {
       { key: 'timestamp', name: 'Time', width: 150 },
       { key: 'transactionHash', name: 'Transaction hash', width: 600 }
     ].map(c => ({ ...c, ...defaultProps }));
-
-    const events = await contract.getPastEvents('allEvents', {
-      filter: { },
-      fromBlock: 0,
+    const events = await contract.getPastEvents('MemberAdded', {
+      fromBlock: 6927652, // live contract deployed
       toBlock: 'latest'
     });
+
     let rows = [];
     for(let rowIndex = 0; rowIndex < events.length; rowIndex++) {
       const row = await this.generateRow(web3, rowIndex, events[rowIndex]);

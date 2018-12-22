@@ -23,7 +23,7 @@ class Product extends React.Component {
   }
 
   getProductDetails = async () => {
-    window.open('https://ixt.global/products/travel-crisis-protection', '_blank');
+    window.open('https://www.ixt.global/crisis-assistance-plus', '_blank');
   }
 
   render() {

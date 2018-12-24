@@ -9,4 +9,7 @@ const fromTimestamp = (timestamp) => {
   }
 }
 
-export { fromTimestamp };
+const fromDate = (date) => {
+  return moment(date).format('DD MMM YYYY HH:mm');
+}
+export { fromTimestamp, fromDate };

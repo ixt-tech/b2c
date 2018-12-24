@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Container,
   Divider,
-  TextArea,
 } from 'semantic-ui-react';
 import MemberDialog from '../../components/member-dialog'
 import DepositPoolDialog from '../../components/deposit-pool-dialog'
@@ -30,7 +29,6 @@ class AdminPage extends React.Component {
     super(props);
     this.addMembers = this.addMembers.bind(this);
     this.removeMembers = this.removeMembers.bind(this);
-    this.getMembers = this.getMembers.bind(this);
     this.depositPool = this.depositPool.bind(this);
     this.withdrawPool = this.withdrawPool.bind(this);
   }
@@ -55,8 +53,6 @@ class AdminPage extends React.Component {
       const ixtAddress = await contract.ixtToken();
       const ixtContract = await IxtContract.at(ixtAddress);
 
-      this.getMembers(web3, contract);
-
       this.setState({ web3, account, contract, ixtContract, isAdmin: isAdmin });
 
     } catch (error) {
@@ -71,7 +67,6 @@ class AdminPage extends React.Component {
     const web3 = this.state.web3;
     const contract = this.state.contract;
     const account = this.state.account;
-
     for(let member of members) {
       contract.addMember(
         web3.utils.fromAscii(member.membershipNumber),
@@ -80,22 +75,17 @@ class AdminPage extends React.Component {
         web3.utils.fromAscii(member.referralInvitationCode),
         {from: account});
     }
-
-    this.getMembers(web3, contract);
   }
 
   async removeMembers(members) {
     const web3 = this.state.web3;
     const contract = this.state.contract;
     const account = this.state.account;
-
     for(let member of members) {
       await contract.removeMember(
         member.address,
         {from: account});
     }
-
-    this.getMembers(web3, contract);
   }
 
   async depositPool(amount) {
@@ -122,37 +112,6 @@ class AdminPage extends React.Component {
     );
   }
 
-  async getMembers(web3, contract) {
-    const length = await contract.getMembersArrayLength();
-    const members = [];
-    for(let i = 0; i < length; i++) {
-      let address = await contract.membersArray(i);
-      let m = await contract.members(address);
-
-      let stakeBalance = 0;
-      let loyaltyBalance = 0;
-      let invitationBalance = 0;
-      if(m.stakeTimestamp.toNumber() > 0) {
-        loyaltyBalance = fromBn(await contract.getLoyaltyRewardBalance(address));
-        invitationBalance = fromBn(m.invitationRewards);
-      }
-
-      let member = {
-        membershipNumber: web3.utils.toAscii(m.membershipNumber),
-        memberAddress: address,
-        productsCovered: '',
-        addedTimestamp: fromTimestamp(m.addedTimestamp),
-        stakedTimestamp: fromTimestamp(m.stakeTimestamp),
-        invitationCode: web3.utils.toAscii(m.invitationCode),
-        stakeBalance: fromBn(m.stakeBalance),
-        loyaltyBalance: loyaltyBalance,
-        invitationBalance: invitationBalance
-      }
-      members.push(member);
-    }
-    this.setState({ members });
-  }
-
   render() {
     if (!this.state.web3) {
       return <Connecting />;
@@ -176,10 +135,9 @@ class AdminPage extends React.Component {
 
         <AdminLevels contract={ this.state.contract } />
         <h4></h4>
-        <MemberGrid members={ this.state.members } />
+        <MemberGrid web3={ this.state.web3 } contract={ this.state.contract } />
         <h4></h4>
         <AdminEventGrid web3={ this.state.web3 } contract={ this.state.contract } />
-
       </Container>
     );
   }

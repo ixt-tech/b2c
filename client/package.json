@@ -8,6 +8,7 @@
     "match-sorter": "^2.3.0",
     "moment": "^2.23.0",
     "react": "^16.6.3",
+    "react-csv": "^1.0.19",
     "react-dom": "^16.4.2",
     "react-loadable": "^5.4.0",
     "react-router": "^4.3.1",

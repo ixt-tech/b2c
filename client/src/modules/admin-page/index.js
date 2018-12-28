@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Container,
   Divider,
+  Button,
 } from 'semantic-ui-react';
 import MemberDialog from '../../components/member-dialog'
 import DepositPoolDialog from '../../components/deposit-pool-dialog'
@@ -47,6 +48,10 @@ class AdminPage extends React.Component {
       Contract.setProvider(web3.currentProvider);
       const contract = await Contract.deployed();
       const isAdmin = await contract.isOwner({from: account});
+      Contract.defaults({
+        gas: 300000,
+        gasLimit: 200000,
+      });
 
       const IxtContract = truffleContract(IxtToken);
       IxtContract.setProvider(web3.currentProvider);

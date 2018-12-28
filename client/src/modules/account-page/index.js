@@ -32,6 +32,10 @@ class AccountPage extends React.Component {
       const Contract = truffleContract(IxtProtect);
       Contract.setProvider(web3.currentProvider);
       const contract = await Contract.deployed();
+      Contract.defaults({
+        gas: 300000,
+        gasLimit: 200000,
+      });
 
       const IxtContract = truffleContract(IxtToken);
       IxtContract.setProvider(web3.currentProvider);

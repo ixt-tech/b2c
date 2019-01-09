@@ -41,7 +41,12 @@ class AccountPage extends React.Component {
       IxtContract.setProvider(web3.currentProvider);
       const ixtAddress = await contract.ixtToken();
       const ixtContract = await IxtContract.at(ixtAddress);
+      Contract.defaults({
+        gas: 300000,
+        gasLimit: 200000,
+      });
 
+      const allowance = await ixtContract.allowance(account, contract.address);
       const member = await contract.members(account);
       if(member.membershipNumber.toString() != 0) {
         this.setState({ isMember: true });

@@ -18,8 +18,6 @@ import IxtProtect from '../../contracts/IxtProtect.json';
 import IxtToken from '../../contracts/IxtToken.json';
 import truffleContract from 'truffle-contract';
 import Connecting from '../../components/connecting';
-import { fromBn, toBn } from '../../utils/number';
-import { fromTimestamp } from '../../utils/date';
 import NonAdmin from "../../components/non-admin";
 
 class AdminPage extends React.Component {
@@ -57,6 +55,10 @@ class AdminPage extends React.Component {
       IxtContract.setProvider(web3.currentProvider);
       const ixtAddress = await contract.ixtToken();
       const ixtContract = await IxtContract.at(ixtAddress);
+      IxtContract.defaults({
+        gas: 300000,
+        gasLimit: 200000,
+      });
 
       this.setState({ web3, account, contract, ixtContract, isAdmin: isAdmin });
 

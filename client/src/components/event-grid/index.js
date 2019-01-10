@@ -3,6 +3,7 @@ import {
   Divider,
   Grid,
   Segment,
+  Loader,
 } from 'semantic-ui-react';
 import './styles.css';
 import { fromBn } from "../../utils/number";
@@ -30,6 +31,7 @@ class EventGrid extends React.Component {
       const row = await this.generateRow(web3, account, rowIndex, events[rowIndex]);
       if(row) rows.push(row);
     }
+    rows.sort((a,b) => (a.timestamp < b.timestamp) ? 1 : ((b.timestamp < a.timestamp) ? -1 : 0));
     this.setState({rows: rows});
   }
 
@@ -43,6 +45,13 @@ class EventGrid extends React.Component {
             <Grid.Column width={3}>Time</Grid.Column>
             <Grid.Column width={4}>Transaction</Grid.Column>
           </Grid.Row>
+          { this.state.rows.length == 0 &&
+          <Grid.Row>
+            <Grid.Column>
+              <Loader active inline='centered'>Loading account history</Loader>
+            </Grid.Column>
+          </Grid.Row>
+          }
           { this.state.rows.map((row) => (
           <Grid.Row className='event-row' children={this.state.rows} key={row.key}>
             <Grid.Column width={4}>{ row.title }</Grid.Column>

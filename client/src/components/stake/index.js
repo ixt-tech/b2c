@@ -13,6 +13,9 @@ import {
 import './styles.css';
 import { fromBn, toBn } from '../../utils/number';
 import { fromTimestamp } from '../../utils/date';
+import getWeb3 from '../../utils/getWeb3';
+import IxtProtect from '../../contracts/IxtProtect.json';
+import truffleContract from "truffle-contract";
 
 class Stake extends React.Component {
 
@@ -44,13 +47,23 @@ class Stake extends React.Component {
   }
 
   handleDeposit = async (event) => {
+
     const contract = await this.props.contract;
     const ixtContract = await this.props.ixtContract;
     const stake = this.state.stake;
     const stakeAmount = this.options[stake].key;
-    ixtContract.approve(contract.address, stakeAmount * 10E7, {from: this.props.account});
+
+    const allowance = await ixtContract.allowance(this.props.account, contract.address);
+    console.log('Allowance:', fromBn(allowance));
+    if(fromBn(allowance) > 0) {
+      await ixtContract.approve(contract.address, 0, {from: this.props.account});
+    }
+    await ixtContract.approve(contract.address, stakeAmount * 10E7, {from: this.props.account});
+    console.log('Allowance set to ' + stakeAmount);
     await contract.depositStake(stake, {from: this.props.account});
+    console.log('Deposit complete');
     this.reloadMember();
+
   }
 
   handleWithdraw = async (event) => {

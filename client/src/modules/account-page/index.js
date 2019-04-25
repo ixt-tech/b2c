@@ -30,28 +30,24 @@ class AccountPage extends React.Component {
       const account = web3.utils.toChecksumAddress(accounts[0]);
 
       const Contract = truffleContract(IxtProtect);
+      Contract.defaults({
+        gas: 160000
+      });
       Contract.setProvider(web3.currentProvider);
       const contract = await Contract.deployed();
-      Contract.defaults({
-        gas: 300000,
-        gasLimit: 200000,
-      });
 
       const IxtContract = truffleContract(IxtToken);
+      IxtContract.defaults({
+        gas: 60000
+      });
       IxtContract.setProvider(web3.currentProvider);
       const ixtAddress = await contract.ixtToken();
       const ixtContract = await IxtContract.at(ixtAddress);
-      Contract.defaults({
-        gas: 300000,
-        gasLimit: 200000,
-      });
 
-      const allowance = await ixtContract.allowance(account, contract.address);
       const member = await contract.members(account);
       if(member.membershipNumber.toString() != 0) {
         this.setState({ isMember: true });
       }
-
       this.setState({ web3, account, contract, ixtContract, member });
 
     } catch (error) {
@@ -76,6 +72,7 @@ class AccountPage extends React.Component {
         <h4>Address: { this.state.account }</h4>
 
         <AccountDetails
+          web3={ this.state.web3 }
           account={ this.state.account }
           contract={ this.state.contract }
           ixtContract={ this.state.ixtContract }
@@ -92,13 +89,8 @@ class AccountPage extends React.Component {
           contract={ this.state.contract }
           member={ this.state.member }
         />
-
-        <EventGrid
-          web3={this.state.web3}
-          contract={this.state.contract}
-          account={this.state.account}
-        />
-
+        <h4/>
+        <h4/>
       </Container>
     );
   }

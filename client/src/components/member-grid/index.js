@@ -79,17 +79,19 @@ class MemberGrid extends React.Component {
     const web3 = this.props.web3;
     const contract = this.props.contract;
     const length = await contract.getMembersArrayLength();
+    console.log('Num of members: ' + length);
     const members = [];
     const addresses = [];
     for(let i = 0; i < length; i++) {
       const address = await contract.membersArray(i);
+      console.log(i + ' ' + address);
       addresses.push(address);
       let m = await contract.members(address);
       let loyaltyBalance = 0;
       let invitationBalance = 0;
-      if(m.stakeTimestamp.toNumber() > 0) {
+      if (m.stakeTimestamp.toNumber() > 0) {
         loyaltyBalance = fromBn(await contract.getLoyaltyRewardBalance(address));
-        invitationBalance = fromBn(m.invitationRewards);
+        invitationBalance = fromBn(await m.invitationRewards);
       }
       let member = {
         membershipNumber: web3.utils.toAscii(m.membershipNumber),
@@ -104,6 +106,7 @@ class MemberGrid extends React.Component {
       }
       members.push(member);
     }
+
     this.setState({
       members: members,
       addresses: addresses,

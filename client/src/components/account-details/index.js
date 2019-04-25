@@ -16,7 +16,7 @@ class AccountDetails extends React.Component {
   render() {
     return (
       <Card.Group itemsPerRow={3}>
-        <Stake contract={this.props.contract} ixtContract={this.props.ixtContract} account={this.props.account} member={this.props.member} />
+        <Stake web3={this.props.web3} contract={this.props.contract} ixtContract={this.props.ixtContract} account={this.props.account} member={this.props.member} />
         <Reward contract={this.props.contract} account={this.props.account} member={this.props.member} />
         <Product contract={this.props.contract} account={this.props.account} />
       </Card.Group>

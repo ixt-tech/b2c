@@ -23,6 +23,7 @@ class EventGrid extends React.Component {
     const account = this.props.account;
 
     const events = await contract.getPastEvents('allEvents', {
+      filter: {'memberAddress': account},
       fromBlock: 6927652, // live contract deployed
       toBlock: 'latest'
     });

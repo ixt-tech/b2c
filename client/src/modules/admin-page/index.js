@@ -41,24 +41,17 @@ class AdminPage extends React.Component {
       const accounts = await web3.eth.getAccounts();
       const account = accounts[0];
 
-      // Get the contract instance.
+      IxtProtect.autoGas = true;
       const Contract = truffleContract(IxtProtect);
       Contract.setProvider(web3.currentProvider);
       const contract = await Contract.deployed();
       const isAdmin = await contract.isOwner({from: account});
-      Contract.defaults({
-        gas: 300000,
-        gasLimit: 200000,
-      });
 
+      IxtToken.autoGas = true;
       const IxtContract = truffleContract(IxtToken);
       IxtContract.setProvider(web3.currentProvider);
       const ixtAddress = await contract.ixtToken();
       const ixtContract = await IxtContract.at(ixtAddress);
-      IxtContract.defaults({
-        gas: 300000,
-        gasLimit: 200000,
-      });
 
       this.setState({ web3, account, contract, ixtContract, isAdmin: isAdmin });
 
@@ -144,7 +137,7 @@ class AdminPage extends React.Component {
         <h4></h4>
         <MemberGrid web3={ this.state.web3 } contract={ this.state.contract } />
         <h4></h4>
-        <AdminEventGrid web3={ this.state.web3 } contract={ this.state.contract } />
+
       </Container>
     );
   }
